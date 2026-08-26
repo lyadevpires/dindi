@@ -1,4 +1,3 @@
-import { Shell } from "@/components/shell";
 import { Card, Empty, Pill, Progress, SectionTitle } from "@/components/ui";
 import { pageCtx } from "@/lib/ctx";
 import { getGoalProgress } from "@/lib/db/finance";
@@ -28,7 +27,7 @@ export default async function Metas() {
   const guardado = metas.reduce((s, m) => s + m.current_amount, 0);
 
   return (
-    <Shell session={session} active="/metas">
+    <>
       <SectionTitle>Nossos sonhos</SectionTitle>
 
       {metas.length === 0 ? (
@@ -106,6 +105,6 @@ export default async function Metas() {
           </div>
         </>
       )}
-    </Shell>
+    </>
   );
 }

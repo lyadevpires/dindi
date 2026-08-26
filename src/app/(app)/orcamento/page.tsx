@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Shell } from "@/components/shell";
 import { Card, Empty, Pill, Progress, SectionTitle } from "@/components/ui";
 import { pageCtx } from "@/lib/ctx";
 import { getBudgetStatus } from "@/lib/db/finance";
@@ -9,7 +8,7 @@ import { addMonths, monthLabel, monthStart, today } from "@/lib/dates";
 export const dynamic = "force-dynamic";
 
 export default async function Orcamento(props: PageProps<"/orcamento">) {
-  const { session, ctx } = await pageCtx();
+  const { ctx } = await pageCtx();
   const params = await props.searchParams;
 
   const bruto = typeof params.mes === "string" ? params.mes : today();
@@ -20,7 +19,7 @@ export default async function Orcamento(props: PageProps<"/orcamento">) {
   const totalGasto = status.budgets.reduce((s, b) => s + b.spent, 0);
 
   return (
-    <Shell session={session} active="/orcamento">
+    <>
       <SectionTitle
         action={
           <div className="flex items-center gap-2 text-sm">
@@ -118,6 +117,6 @@ export default async function Orcamento(props: PageProps<"/orcamento">) {
           Sem limite ainda: {status.categories_without_budget.join(", ")}.
         </p>
       ) : null}
-    </Shell>
+    </>
   );
 }

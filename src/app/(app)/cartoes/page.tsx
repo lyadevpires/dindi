@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Shell } from "@/components/shell";
 import { Card, Empty, Pill, SectionTitle } from "@/components/ui";
 import { pageCtx } from "@/lib/ctx";
 import { getInvoice, listAccounts } from "@/lib/db/finance";
@@ -12,7 +11,7 @@ const ROTULO = { open: "aberta", closed: "fechada", paid: "paga" } as const;
 const TOM = { open: "azul", closed: "amarelo", paid: "verde" } as const;
 
 export default async function Cartoes(props: PageProps<"/cartoes">) {
-  const { session, ctx } = await pageCtx();
+  const { ctx } = await pageCtx();
   const params = await props.searchParams;
 
   const bruto = typeof params.mes === "string" ? params.mes : today();
@@ -26,7 +25,7 @@ export default async function Cartoes(props: PageProps<"/cartoes">) {
   );
 
   return (
-    <Shell session={session} active="/cartoes">
+    <>
       <SectionTitle
         action={
           <div className="flex items-center gap-2 text-sm">
@@ -109,6 +108,6 @@ export default async function Cartoes(props: PageProps<"/cartoes">) {
           )}
         </div>
       )}
-    </Shell>
+    </>
   );
 }

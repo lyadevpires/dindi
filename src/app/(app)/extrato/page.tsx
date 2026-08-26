@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Shell } from "@/components/shell";
 import { Card, Empty, SectionTitle } from "@/components/ui";
 import { pageCtx } from "@/lib/ctx";
 import { listTransactions } from "@/lib/db/finance";
@@ -9,7 +8,7 @@ import { addMonths, formatDate, monthLabel, monthStart, today } from "@/lib/date
 export const dynamic = "force-dynamic";
 
 export default async function Extrato(props: PageProps<"/extrato">) {
-  const { session, ctx } = await pageCtx();
+  const { ctx } = await pageCtx();
   const params = await props.searchParams;
 
   const bruto = typeof params.mes === "string" ? params.mes : today();
@@ -27,7 +26,7 @@ export default async function Extrato(props: PageProps<"/extrato">) {
   }
 
   return (
-    <Shell session={session} active="/extrato">
+    <>
       <SectionTitle
         action={
           <div className="flex items-center gap-2 text-sm">
@@ -114,6 +113,6 @@ export default async function Extrato(props: PageProps<"/extrato">) {
           ))}
         </div>
       )}
-    </Shell>
+    </>
   );
 }

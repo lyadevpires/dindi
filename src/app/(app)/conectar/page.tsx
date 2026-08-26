@@ -1,7 +1,5 @@
-import { Shell } from "@/components/shell";
 import { Card, SectionTitle } from "@/components/ui";
 import { Dindi } from "@/components/dindi";
-import { requireSession } from "@/lib/auth";
 import { appUrl } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -37,11 +35,10 @@ const EXEMPLOS = [
 ];
 
 export default async function Conectar() {
-  const session = await requireSession();
   const url = `${appUrl()}/api/mcp`;
 
   return (
-    <Shell session={session} active="/conectar">
+    <>
       <div className="mb-6 flex items-start gap-4">
         <Dindi size={56} humor="atento" />
         <div>
@@ -94,6 +91,6 @@ export default async function Conectar() {
           pergunta quando ficar em dúvida.
         </p>
       </Card>
-    </Shell>
+    </>
   );
 }

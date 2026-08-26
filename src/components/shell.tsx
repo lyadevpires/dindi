@@ -1,7 +1,8 @@
-import Link from "next/link";
+"use client";
+
+import Link, { useLinkStatus } from "next/link";
+import { usePathname } from "next/navigation";
 import { Dindi } from "@/components/dindi";
-import { signOut } from "@/app/auth/actions";
-import type { SessionInfo } from "@/lib/auth";
 
 const NAV = [
   { href: "/", label: "Início" },
@@ -12,16 +13,27 @@ const NAV = [
   { href: "/casa", label: "Casa" },
 ];
 
-/** Cabeçalho + navegação, usado em todas as telas de dentro. */
+/**
+ * Cabeçalho + navegação.
+ *
+ * Fica no layout (não em cada página), então ele não é remontado a cada
+ * clique: o menu continua na tela e só o miolo troca. É por isso que ele é
+ * componente de cliente — precisa saber em que página você está sem uma nova
+ * ida ao servidor.
+ */
 export function Shell({
-  session,
-  active,
+  displayName,
+  householdName,
+  sair,
   children,
 }: {
-  session: SessionInfo;
-  active: string;
+  displayName: string;
+  householdName: string;
+  sair: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
   return (
     <>
       <header className="border-b border-borda bg-creme/80 backdrop-blur">
@@ -33,36 +45,29 @@ export function Shell({
 
           <div className="flex items-center gap-3 text-sm">
             <span className="hidden text-suave sm:inline">
-              {session.displayName} · {session.householdName}
+              {displayName} · {householdName}
             </span>
-            <form action={signOut}>
-              <button
-                type="submit"
-                className="rounded-lg px-2.5 py-1.5 text-suave transition hover:bg-areia"
-              >
-                Sair
-              </button>
-            </form>
+            {sair}
           </div>
         </div>
 
         <nav className="mx-auto w-full max-w-5xl overflow-x-auto px-5">
           <ul className="flex gap-1 pb-2">
-            {NAV.map((item) => {
-              const isActive = item.href === active;
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={`inline-block whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-                      isActive ? "bg-tinta text-creme" : "text-suave hover:bg-areia"
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              );
-            })}
+            {NAV.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                    item.href === pathname
+                      ? "bg-tinta text-creme"
+                      : "text-suave hover:bg-areia"
+                  }`}
+                >
+                  {item.label}
+                  <Carregando />
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
       </header>
@@ -76,5 +81,17 @@ export function Shell({
         </Link>
       </footer>
     </>
+  );
+}
+
+/** Bolinha girando dentro do item clicado, para o clique responder na hora. */
+function Carregando() {
+  const { pending } = useLinkStatus();
+  if (!pending) return null;
+  return (
+    <span
+      aria-hidden
+      className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent opacity-60"
+    />
   );
 }

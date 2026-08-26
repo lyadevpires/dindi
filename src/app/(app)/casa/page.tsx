@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Shell } from "@/components/shell";
 import { Card, Empty, Pill, SectionTitle } from "@/components/ui";
 import { ConviteBotao } from "@/components/convite";
 import { renameHousehold, revokeConnection } from "./actions";
@@ -45,7 +44,7 @@ export default async function Casa() {
   }
 
   return (
-    <Shell session={session} active="/casa">
+    <>
       {/* ---------------- Quem mora aqui ---------------- */}
       <section className="mb-8">
         <SectionTitle>Quem mora na {session.householdName}</SectionTitle>
@@ -233,6 +232,6 @@ export default async function Casa() {
           estiver no grupo errado, é só falar: <em>&ldquo;academia é conta fixa pra mim&rdquo;</em>.
         </p>
       </section>
-    </Shell>
+    </>
   );
 }

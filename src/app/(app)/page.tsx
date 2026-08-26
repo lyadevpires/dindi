@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Shell } from "@/components/shell";
 import { Dindi } from "@/components/dindi";
 import { Card, Empty, Pill, Progress, SectionTitle } from "@/components/ui";
 import { Conselhos } from "@/components/conselhos";
@@ -29,7 +28,7 @@ export default async function Home() {
   const sonhos = metas.filter((m) => m.kind === "sonho");
 
   return (
-    <Shell session={session} active="/">
+    <>
       {semNada ? <PrimeiroDia nome={session.displayName} /> : null}
 
       {/* ---------------- O que o dindi tem a dizer ---------------- */}
@@ -245,7 +244,7 @@ export default async function Home() {
           </Card>
         )}
       </section>
-    </Shell>
+    </>
   );
 }
 
