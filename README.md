@@ -48,6 +48,12 @@ npm install
 npm run dev
 ```
 
-No Supabase, rode os arquivos de `supabase/` na ordem (001, 002, 003) no SQL Editor.
+O banco se monta sozinho: mudou algo em `supabase/*.sql`, publique e chame
+
+```bash
+curl -X POST https://SEU-SITE/api/setup -H "Authorization: Bearer $CRON_SECRET"
+```
+
+Pode repetir quantas vezes quiser, não estraga nada.
 
 Detalhes de arquitetura e as regras que não se quebram estão em `CLAUDE.md`.

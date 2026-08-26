@@ -23,7 +23,11 @@ por CLI; nunca peça para ela rodar comando, abrir arquivo ou colar código.
 
 ## Mapa rápido
 
-- `supabase/00{1,2,3}_*.sql` — schema, RLS e funções. Rodar na ordem no SQL Editor.
+- `supabase/00{1,2,3}_*.sql` — schema, RLS e funções.
+- `src/app/api/setup/route.ts` — aplica esses .sql. **Mexeu no schema? Publique e chame
+  `POST /api/setup` com o `CRON_SECRET`.** As chaves do Supabase são "sensíveis" na
+  Vercel e não podem ser lidas de fora, então só o deploy alcança o banco.
+  O `prebuild` transforma os .sql em `src/lib/migrations.generated.ts` — não edite esse.
 - `src/lib/db/finance.ts` — toda a regra de negócio. As ferramentas do MCP são casca fina.
 - `src/lib/db/resolve.ts` — traduz nome falado ("cartão nubank") em registro.
 - `src/lib/mcp/tools.ts` — as ferramentas + `DINDI_INSTRUCTIONS` (como o Claude deve agir).
