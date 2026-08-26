@@ -37,11 +37,19 @@ export async function POST(request: Request) {
     );
   }
 
+  // O `sslmode=require` da string de conexão sobrescreveria a opção `ssl`
+  // abaixo, e o certificado do Supabase é assinado por uma CA própria.
+  const limpa = new URL(url);
+  limpa.searchParams.delete("sslmode");
+
   const aplicados: string[] = [];
   let client: Client | null = null;
 
   try {
-    client = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+    client = new Client({
+      connectionString: limpa.toString(),
+      ssl: { rejectUnauthorized: false },
+    });
     await client.connect();
 
     for (const { nome, sql } of MIGRATIONS) {
