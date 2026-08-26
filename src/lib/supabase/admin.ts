@@ -6,9 +6,10 @@ let cached: SupabaseClient | null = null;
 /**
  * Cliente ADMIN do Supabase — ignora o RLS.
  *
- * ⚠️ Só pode ser usado no servidor, e apenas em dois lugares:
+ * ⚠️ Só pode ser usado no servidor, e apenas em três lugares:
  *   1. O servidor MCP (o Claude se autentica por OAuth, não por cookie do Supabase)
  *   2. A rotina diária (cron), que roda sem usuário logado
+ *   3. A criação de conta, que precisa marcar o email como confirmado
  *
  * Como o RLS não protege aqui, TODA consulta feita com este cliente
  * precisa filtrar por household_id na mão. Por isso o acesso a dados

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export type ActionState = { error?: string; ok?: string } | null;
 
@@ -43,22 +44,25 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
   if (!email || !password) return { error: "Preencha email e senha." };
   if (password.length < 8) return { error: "A senha precisa ter pelo menos 8 caracteres." };
 
+  // A conta nasce já confirmada, em vez de depender do email de confirmação
+  // do Supabase — que não temos como configurar (a integração fica trancada
+  // dentro da Vercel) e que hoje aponta para localhost.
+  const { error: createError } = await supabaseAdmin().auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+
+  if (createError) {
+    const jaExiste =
+      createError.message.includes("already registered") ||
+      createError.message.includes("already been registered");
+    return { error: jaExiste ? "Esse email já tem conta. Tente entrar." : createError.message };
+  }
+
   const supabase = await supabaseServer();
-  const { data, error } = await supabase.auth.signUp({ email, password });
-
-  if (error) {
-    return {
-      error:
-        error.message.includes("already registered")
-          ? "Esse email já tem conta. Tente entrar."
-          : error.message,
-    };
-  }
-
-  // Se a confirmação por email estiver ligada no Supabase, não há sessão ainda.
-  if (!data.session) {
-    return { ok: "Conta criada! Confirme o email que enviamos e depois faça login." };
-  }
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { error: error.message };
 
   revalidatePath("/", "layout");
   redirect(next === "/" ? "/comecar" : next);
