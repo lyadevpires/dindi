@@ -39,6 +39,6 @@ export const config = {
      * Todas as rotas, menos arquivos estáticos, imagens e o endpoint do MCP
      * (que usa token OAuth, não cookie).
      */
-    "/((?!_next/static|_next/image|favicon.ico|api/mcp|api/cron|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/mcp|api/cron|api/setup|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

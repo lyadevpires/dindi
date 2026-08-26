@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // /api/setup lê estes arquivos em tempo de execução para montar o banco.
+  outputFileTracingIncludes: {
+    "/api/setup": ["./supabase/*.sql"],
+  },
+
   async rewrites() {
     // O OAuth exige endereços que começam com ponto (/.well-known/...).
     // Não dá para criar pasta com ponto dentro de src/app, então
