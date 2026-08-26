@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
   <rect width="96" height="96" rx="20" fill="#FDF6F1"/>
-  <g transform="translate(48 51) scale(1.18) translate(-48 -38)">
+  <g transform="translate(48 50) scale(1.02) translate(-48 -38)">
     <g stroke="#1C1917" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M35 20C28 9 16 5 12 12c-4 7-1 19 9 26" fill="#FBD5CD"/>
       <path d="M61 20c7-11 19-15 23-8 4 7 1 19-9 26" fill="#FBD5CD"/>
