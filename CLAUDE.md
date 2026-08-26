@@ -2,8 +2,12 @@
 
 # dindi
 
-Finanças de casal onde **todo o registro acontece conversando com o Claude via MCP**.
+Finanças pessoais onde **todo o registro acontece conversando com o Claude via MCP**.
 O site é só visualização — não existe formulário de cadastro de gasto em lugar nenhum.
+
+**Não é um app de casal.** É uma pessoa cuidando do dinheiro dela, que pode convidar
+quem divide as contas — marido, mãe, irmão, filho — ou ninguém. A casa começa com uma
+pessoa só e não tem limite de membros.
 
 Quem toca este projeto é uma pessoa **não-técnica** fazendo vibe coding. Explique em
 termos de produto ("agora o site mostra as metas"), nunca em termos técnicos. Faça tudo
