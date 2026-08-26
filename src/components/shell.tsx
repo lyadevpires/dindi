@@ -74,8 +74,10 @@ export function Shell({
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-6">{children}</main>
 
-      <footer className="mx-auto w-full max-w-5xl px-5 py-8 text-center text-xs text-suave">
-        Para registrar gastos, converse com o Claude.{" "}
+      {/* O pb extra é o espaço do botão de anotar, que flutua por cima. */}
+      <footer className="mx-auto w-full max-w-5xl px-5 pb-28 pt-8 text-center text-xs text-suave">
+        Dá para anotar no <strong className="font-medium">+</strong> aí do lado, ou só
+        contar pro Claude.{" "}
         <Link href="/conectar" className="underline underline-offset-2">
           Como conectar
         </Link>
