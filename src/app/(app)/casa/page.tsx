@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { Card, Empty, Pill, SectionTitle } from "@/components/ui";
 import { ConviteBotao } from "@/components/convite";
+import { ActionForm, Field } from "@/components/auth-form";
+import { Avisos } from "@/components/avisos";
+import { updatePassword } from "@/app/auth/actions";
 import { renameHousehold, revokeConnection } from "./actions";
 import { pageCtx } from "@/lib/ctx";
+import { appUrl, env } from "@/lib/env";
 import { listAccounts, listCategories, listRecurringRules } from "@/lib/db/finance";
 import { formatBRL } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
@@ -82,9 +86,40 @@ export default async function Casa() {
 
         {membros.length < 2 ? (
           <div className="mt-3">
-            <ConviteBotao />
+            <ConviteBotao baseUrl={appUrl()} />
           </div>
         ) : null}
+      </section>
+
+      {/* ---------------- Avisos ---------------- */}
+      <section className="mb-8">
+        <SectionTitle>O recado da manhã</SectionTitle>
+        <Card>
+          <p className="mb-3 text-sm text-suave">
+            Toda manhã o dindi olha as contas de vocês e, se tiver algo que vale a pena saber
+            — fatura fechando, gasto acima do combinado, meta batida —, ele avisa neste
+            aparelho. Se estiver tudo em ordem, ele fica quieto.
+          </p>
+          <Avisos chavePublica={env.vapidPublicKey} />
+        </Card>
+      </section>
+
+      {/* ---------------- Senha ---------------- */}
+      <section className="mb-8">
+        <SectionTitle>Sua senha</SectionTitle>
+        <Card>
+          <div className="max-w-sm">
+            <ActionForm action={updatePassword} submitLabel="Trocar a senha">
+              <Field
+                label="Senha nova"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                hint="Pelo menos 8 letras."
+              />
+            </ActionForm>
+          </div>
+        </Card>
       </section>
 
       {/* ---------------- Contas ---------------- */}

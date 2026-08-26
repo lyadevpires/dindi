@@ -38,6 +38,20 @@ export const env = {
       "no Supabase, vá em Project Settings → API Keys → service_role. NUNCA coloque essa chave no navegador."
     );
   },
+  get vapidPublicKey() {
+    return required(
+      "NEXT_PUBLIC_VAPID_PUBLIC_KEY",
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      "rode `node scripts/gen-vapid.mjs` e guarde as duas chaves na Vercel."
+    );
+  },
+  get vapidPrivateKey() {
+    return required(
+      "VAPID_PRIVATE_KEY",
+      process.env.VAPID_PRIVATE_KEY,
+      "é a outra metade do par gerado por `node scripts/gen-vapid.mjs`. Essa nunca vai para o navegador."
+    );
+  },
   get cronSecret() {
     return required(
       "CRON_SECRET",

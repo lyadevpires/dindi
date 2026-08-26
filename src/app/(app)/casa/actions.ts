@@ -37,3 +37,48 @@ export async function revokeConnection(formData: FormData): Promise<void> {
 
   revalidatePath("/casa");
 }
+
+/** O que o navegador devolve quando a pessoa aceita ser avisada. */
+type Inscricao = { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
+
+/**
+ * Guarda este aparelho na lista de quem recebe o recado da manhã.
+ * Devolve a mensagem de erro, ou nada se deu certo.
+ */
+export async function ligarAvisos(inscricao: Inscricao): Promise<string | null> {
+  const endpoint = inscricao?.endpoint;
+  const p256dh = inscricao?.keys?.p256dh;
+  const auth = inscricao?.keys?.auth;
+  if (!endpoint || !p256dh || !auth) return "O navegador devolveu uma inscrição incompleta.";
+
+  const session = await requireSession();
+  const supabase = await supabaseServer();
+
+  // O mesmo aparelho pode reinscrever — sobrescreve em vez de duplicar.
+  const { error } = await supabase.from("push_subscriptions").upsert(
+    {
+      household_id: session.householdId,
+      user_id: session.userId,
+      endpoint,
+      p256dh,
+      auth,
+    },
+    { onConflict: "endpoint" }
+  );
+
+  if (error) return error.message;
+
+  revalidatePath("/casa");
+  return null;
+}
+
+/** Tira este aparelho da lista. */
+export async function desligarAvisos(endpoint: string): Promise<void> {
+  if (!endpoint) return;
+
+  await requireSession();
+  const supabase = await supabaseServer();
+  await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
+
+  revalidatePath("/casa");
+}

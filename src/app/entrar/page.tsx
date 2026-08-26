@@ -31,6 +31,12 @@ export default async function EntrarPage(props: PageProps<"/entrar">) {
             autoComplete="current-password"
           />
         </ActionForm>
+
+        <p className="mt-4 text-center text-sm">
+          <Link href="/esqueci" className="text-suave underline underline-offset-2">
+            Esqueci minha senha
+          </Link>
+        </p>
       </div>
 
       <p className="mt-5 text-center text-sm text-suave">

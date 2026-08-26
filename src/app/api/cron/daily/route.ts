@@ -3,6 +3,8 @@ import { num, round2 } from "@/lib/money";
 import { env } from "@/lib/env";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { safeEqual } from "@/lib/oauth";
+import { getConselhos } from "@/lib/db/conselhos";
+import { mandarRecado } from "@/lib/push";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -31,7 +33,13 @@ export async function GET(request: Request) {
   const mesAtual = toISO(y, m, 1);
 
   const db = supabaseAdmin();
-  const log = { data: hoje, recorrencias_lancadas: 0, faturas_fechadas: 0, erros: [] as string[] };
+  const log = {
+    data: hoje,
+    recorrencias_lancadas: 0,
+    faturas_fechadas: 0,
+    recados_enviados: 0,
+    erros: [] as string[],
+  };
 
   // -------------------------------------------------------------------
   // 1. Recorrências
@@ -153,6 +161,34 @@ export async function GET(request: Request) {
       );
 
       log.faturas_fechadas++;
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // 3. O recado da manhã
+  // -------------------------------------------------------------------
+  //
+  // Só fala quando tem o que dizer. Um "está tudo bem" diário vira ruído em
+  // três dias, e aí some junto com ele o aviso que importava.
+  const { data: inscritos } = await db.from("push_subscriptions").select("household_id, user_id");
+
+  const casas = new Map<string, string>();
+  for (const i of inscritos ?? []) {
+    if (!casas.has(i.household_id)) casas.set(i.household_id, i.user_id);
+  }
+
+  for (const [householdId, userId] of casas) {
+    try {
+      const conselhos = await getConselhos({ db, householdId, userId });
+      const importante = conselhos.find((c) => c.nivel === "urgente" || c.nivel === "atencao");
+      if (!importante) continue;
+
+      log.recados_enviados += await mandarRecado(householdId, {
+        titulo: importante.titulo,
+        texto: importante.texto,
+      });
+    } catch (err) {
+      log.erros.push(`recado ${householdId}: ${(err as Error).message}`);
     }
   }
 

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { appUrl } from "@/lib/env";
 
 export type ActionState = { error?: string; ok?: string } | null;
 
@@ -118,6 +119,50 @@ export async function joinHousehold(
 
   revalidatePath("/", "layout");
   redirect(next);
+}
+
+/**
+ * Manda o email com o link para escolher uma senha nova.
+ *
+ * Responde a mesma coisa achando ou não o email: se dissesse "esse email não
+ * existe", qualquer pessoa poderia descobrir quem tem conta aqui só chutando.
+ */
+export async function requestPasswordReset(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return { error: "Escreva seu email." };
+
+  const supabase = await supabaseServer();
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${appUrl()}/auth/confirm?next=${encodeURIComponent("/nova-senha")}`,
+  });
+
+  return {
+    ok: "Se existe uma conta com esse email, o link acabou de sair. Dá uma olhada na caixa de entrada (e no spam).",
+  };
+}
+
+/**
+ * Troca a senha de quem já está logado — inclusive de quem acabou de entrar
+ * pelo link do email, que para o Supabase é uma sessão como outra qualquer.
+ */
+export async function updatePassword(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const password = String(formData.get("password") ?? "");
+  if (password.length < 8) return { error: "A senha precisa ter pelo menos 8 caracteres." };
+
+  const supabase = await supabaseServer();
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) return { error: "O link expirou. Peça outro na tela de entrar." };
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: error.message };
+
+  return { ok: "Senha trocada. Pode usar a nova daqui pra frente." };
 }
 
 export async function createInvite(_prev: ActionState): Promise<ActionState> {
