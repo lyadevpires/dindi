@@ -61,7 +61,7 @@ export default async function Casa() {
               >
                 <span className="font-medium">{m.display_name}</span>
                 <Pill tone={m.role === "owner" ? "roxo" : "neutro"}>
-                  {m.role === "owner" ? "dona da casa" : "par"}
+                  {m.role === "owner" ? "criou a casa" : "mora aqui"}
                 </Pill>
               </li>
             ))}
@@ -84,11 +84,13 @@ export default async function Casa() {
           </button>
         </form>
 
-        {membros.length < 2 ? (
-          <div className="mt-3">
-            <ConviteBotao baseUrl={appUrl()} />
-          </div>
-        ) : null}
+        {/*
+          Sem limite de gente: a casa pode ser você sozinha, você e quem divide
+          as contas, ou a família inteira. Cada convite vale para uma pessoa.
+        */}
+        <div className="mt-3">
+          <ConviteBotao baseUrl={appUrl()} />
+        </div>
       </section>
 
       {/* ---------------- Avisos ---------------- */}
@@ -96,7 +98,7 @@ export default async function Casa() {
         <SectionTitle>O recado da manhã</SectionTitle>
         <Card>
           <p className="mb-3 text-sm text-suave">
-            Toda manhã o dindi olha as contas de vocês e, se tiver algo que vale a pena saber
+            Toda manhã o dindi olha as contas da casa e, se tiver algo que vale a pena saber
             — fatura fechando, gasto acima do combinado, meta batida —, ele avisa neste
             aparelho. Se estiver tudo em ordem, ele fica quieto.
           </p>

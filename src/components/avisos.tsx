@@ -19,8 +19,8 @@ function paraBytes(base64: string): Uint8Array<ArrayBuffer> {
 /**
  * Liga o recado da manhã neste aparelho.
  *
- * A inscrição é por aparelho, não por conta: o celular dela e o dele são dois
- * cadastros diferentes, e cada um decide se quer ser avisado.
+ * A inscrição é por aparelho, não por conta: se duas pessoas moram na mesma
+ * casa, cada celular é um cadastro, e cada um decide se quer ser avisado.
  */
 export function Avisos({ chavePublica }: { chavePublica: string }) {
   const [estado, setEstado] = useState<Estado>("carregando");

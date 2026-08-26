@@ -19,7 +19,7 @@ export default async function CriarContaPage(props: PageProps<"/criar-conta">) {
       <div className="mb-8 text-center">
         <Logo size={44} />
         <p className="mt-3 text-sm text-suave">
-          Suas finanças de casal, organizadas conversando.
+          Suas contas organizadas conversando. Sozinha, ou dividindo com quem você quiser.
         </p>
       </div>
 

@@ -50,7 +50,7 @@ export default async function Home() {
               </span>{" "}
               de <span className="tabular">{formatBRL(reserva.target_amount)}</span>
               {reserva.percent >= 100
-                ? " · vocês estão protegidos de um imprevisto"
+                ? " · a casa está protegida de um imprevisto"
                 : ` · faltam ${formatBRL(reserva.remaining)} para dormir tranquilo`}
             </p>
           </Card>
@@ -94,7 +94,7 @@ export default async function Home() {
                 </p>
                 {m.monthly_needed ? (
                   <p className="mt-1 text-xs text-suave">
-                    Guardando {formatBRL(m.monthly_needed)} por mês vocês chegam lá.
+                    Guardando {formatBRL(m.monthly_needed)} por mês você chega lá.
                   </p>
                 ) : null}
               </Card>

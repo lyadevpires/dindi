@@ -4,7 +4,11 @@ import { useActionState, useState } from "react";
 import { createInvite } from "@/app/auth/actions";
 
 /**
- * Gera o convite para o par entrar na mesma casa.
+ * Gera o convite para outra pessoa entrar na mesma casa.
+ *
+ * "Casa" aqui é quem divide dinheiro com você — pode ser o marido, a mãe, o
+ * irmão, o filho, ou ninguém. A casa começa com uma pessoa só e cresce se ela
+ * quiser; nada aqui pressupõe um par.
  *
  * O código sozinho obriga a pessoa a achar o site, criar conta e digitar oito
  * caracteres sem errar. O link já leva ela para a tela certa com o código
@@ -22,7 +26,7 @@ export function ConviteBotao({ baseUrl }: { baseUrl: string }) {
     // No celular isso abre o WhatsApp, a mensagem, o que a pessoa escolher.
     if (navigator.share) {
       try {
-        await navigator.share({ text: `Vem cuidar do nosso dinheiro comigo no dindi: ${link}` });
+        await navigator.share({ text: `Vem cuidar do dinheiro da casa comigo no dindi: ${link}` });
         return;
       } catch {
         // Fechou o menu sem escolher nada. Cai na cópia, que nunca falha feio.
@@ -37,7 +41,7 @@ export function ConviteBotao({ baseUrl }: { baseUrl: string }) {
     return (
       <div className="rounded-xl border border-borda bg-white p-4">
         <p className="text-sm text-suave">
-          Manda esse link pro seu par. Ele clica, cria a conta dele e já cai aqui dentro.
+          Manda esse link pra pessoa. Ela clica, cria a conta dela e já cai aqui dentro.
         </p>
 
         <p className="mt-2 select-all break-all rounded-lg bg-areia px-3 py-2 font-mono text-xs">
@@ -69,7 +73,7 @@ export function ConviteBotao({ baseUrl }: { baseUrl: string }) {
         disabled={pending}
         className="rounded-lg border border-borda bg-white px-3.5 py-2 text-sm font-medium transition hover:bg-areia disabled:opacity-60"
       >
-        {pending ? "Gerando..." : "Convidar meu par"}
+        {pending ? "Gerando..." : "Convidar alguém para esta casa"}
       </button>
       {state?.error ? (
         <p className="mt-2 text-sm text-vermelhinho">{state.error}</p>

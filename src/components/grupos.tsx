@@ -104,7 +104,7 @@ export function Grupos({
 
       {comValor.length === 0 ? (
         <Empty>
-          Assim que vocês registrarem os primeiros gastos, eu separo tudo aqui entre o que é
+          Assim que os primeiros gastos entrarem, eu separo tudo aqui entre o que é
           obrigação e o que é escolha.
         </Empty>
       ) : (

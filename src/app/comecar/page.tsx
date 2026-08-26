@@ -7,8 +7,11 @@ import { getSession, getUser } from "@/lib/auth";
 export const metadata = { title: "Começar — dindi" };
 
 /**
- * Onboarding: depois de criar a conta, a pessoa cria a casa dela
- * ou entra na casa do parceiro usando um código de convite.
+ * Onboarding: depois de criar a conta, a pessoa cria a casa dela ou entra numa
+ * casa que já existe usando um código de convite.
+ *
+ * O caminho normal é o de cima — casa nova, uma pessoa só. Entrar numa casa
+ * existente é a exceção, de quem recebeu convite de alguém.
  */
 export default async function ComecarPage(props: PageProps<"/comecar">) {
   const params = await props.searchParams;
@@ -48,9 +51,9 @@ export default async function ComecarPage(props: PageProps<"/comecar">) {
       </div>
 
       <div className="rounded-2xl border border-borda bg-white p-6">
-        <h2 className="mb-1 font-semibold">Entrar na casa do meu par</h2>
+        <h2 className="mb-1 font-semibold">Recebi um convite</h2>
         <p className="mb-4 text-sm text-suave">
-          Peça o código de convite para quem já criou a casa.
+          Se alguém já criou a casa e te chamou, é por aqui. Peça o código para essa pessoa.
         </p>
         <ActionForm action={joinHousehold} submitLabel="Entrar na casa" hidden={{ next }}>
           <Field

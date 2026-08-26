@@ -17,6 +17,10 @@ import type { Ctx } from "./types";
  * um nível, um título curto e uma frase que explica o porquê em português
  * de gente. Nada de "sua taxa de poupança está em 4%".
  *
+ * A voz é sempre com UMA pessoa ("você") e o dinheiro é sempre "da casa".
+ * A casa pode ter uma pessoa só ou uma família inteira — falar "vocês" deixaria
+ * de fora justamente quem usa o dindi sozinha, que é o caso mais comum.
+ *
  * Níveis:
  *   urgente  → dinheiro vai faltar, precisa agir agora
  *   atencao  → ainda dá tempo de corrigir este mês
@@ -101,7 +105,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
     out.push({
       id: "mes-no-vermelho",
       nivel: "urgente",
-      titulo: "Vocês gastaram mais do que entrou",
+      titulo: "Saiu mais do que entrou",
       texto: `Entrou ${formatBRL(renda)} e saiu ${formatBRL(round2(gasto + agora.saved))}. São ${formatBRL(buraco)} a mais do que a casa ganhou este mês. O buraco vai sair de algum lugar: da reserva ou do cartão.`,
       sugestao: "onde dá para cortar este mês?",
     });
@@ -118,7 +122,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
         id: "ritmo-perigoso",
         nivel: "atencao",
         titulo: "Nesse ritmo o mês não fecha",
-        texto: `Faltando ${Math.round((1 - fracao) * 30)} dias, vocês já gastaram ${formatBRL(gasto)}. Mantendo esse ritmo, o mês termina em ${formatBRL(projecao)} — mais do que os ${formatBRL(renda)} que entraram.`,
+        texto: `Faltando ${Math.round((1 - fracao) * 30)} dias, já saíram ${formatBRL(gasto)}. Mantendo esse ritmo, o mês termina em ${formatBRL(projecao)} — mais do que os ${formatBRL(renda)} que entraram.`,
         sugestao: "quanto posso gastar por dia até o fim do mês?",
       });
     }
@@ -132,7 +136,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
       id: "fixo-pesado",
       nivel: "atencao",
       titulo: "As contas fixas estão pesadas",
-      texto: `${fixo.percent}% do que entra já vai embora em contas fixas (${formatBRL(fixo.total)}), e isso é o que vocês não escolhem no mês. Acima de 50% sobra pouco espaço para respirar. Vale olhar assinatura parada e plano que dá para baixar.`,
+      texto: `${fixo.percent}% do que entra já vai embora em contas fixas (${formatBRL(fixo.total)}), e isso é o que não se escolhe no mês. Acima de 50% sobra pouco espaço para respirar. Vale olhar assinatura parada e plano que dá para baixar.`,
       sugestao: "quais contas fixas eu poderia cortar ou renegociar?",
     });
   }
@@ -147,7 +151,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
       id: "lazer-alto",
       nivel: "atencao",
       titulo: "O lazer passou do ponto",
-      texto: `${formatBRL(lazer.total)} em lazer, ${lazer.percent}% de tudo que entrou.${top ? ` A maior parte foi em ${top.name} (${formatBRL(top.total)}).` : ""} Lazer é importante, mas acima de 20% ele começa a comer o dinheiro dos sonhos de vocês.`,
+      texto: `${formatBRL(lazer.total)} em lazer, ${lazer.percent}% de tudo que entrou.${top ? ` A maior parte foi em ${top.name} (${formatBRL(top.total)}).` : ""} Lazer é importante, mas acima de 20% ele começa a comer o dinheiro dos seus sonhos.`,
       sugestao: "me ajuda a definir um limite de lazer para o mês que vem",
     });
   } else if (lazerAntes > 0 && lazer.total > lazerAntes * 1.6 && fracao > 0.6) {
@@ -155,7 +159,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
     out.push({
       id: "lazer-subiu",
       nivel: "atencao",
-      titulo: "Vocês gastaram bem mais com lazer",
+      titulo: "O lazer subiu bastante",
       texto: `Foram ${formatBRL(aMais)} a mais que no mês passado em lazer. Não é proibido — só vale saber se foi escolha ou se passou batido.`,
       sugestao: "o que mudou no meu lazer em relação ao mês passado?",
     });
@@ -171,7 +175,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
       id: "fatura-maior-que-conta",
       nivel: "urgente",
       titulo: "A fatura está maior que o dinheiro em conta",
-      texto: `Vocês devem ${formatBRL(fatura)} no cartão e têm ${formatBRL(emConta)} disponível. Se a fatura vencer hoje, não dá para pagar tudo. Pagar só o mínimo é a forma mais cara de dever dinheiro que existe.`,
+      texto: `A casa deve ${formatBRL(fatura)} no cartão e tem ${formatBRL(emConta)} disponível. Se a fatura vencer hoje, não dá para pagar tudo. Pagar só o mínimo é a forma mais cara de dever dinheiro que existe.`,
       sugestao: "monta um plano para eu pagar a fatura inteira",
     });
   }
@@ -185,16 +189,16 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
     out.push({
       id: "sem-reserva",
       nivel: "dica",
-      titulo: "Vocês ainda não têm reserva de emergência",
-      texto: `Reserva de emergência é o dinheiro que impede que um pneu furado ou um dente quebrado vire dívida no cartão. Pelo que vocês gastam para viver (${formatBRL(reservaIdeal.monthly_cost)} por mês), o ideal é chegar em ${formatBRL(reservaIdeal.ideal)} — seis meses parados. Começar por ${formatBRL(reservaIdeal.minimum)} já resolve a maioria dos sustos.`,
+      titulo: "Ainda não existe uma reserva de emergência",
+      texto: `Reserva de emergência é o dinheiro que impede que um pneu furado ou um dente quebrado vire dívida no cartão. Pelo que a casa gasta para viver (${formatBRL(reservaIdeal.monthly_cost)} por mês), o ideal é chegar em ${formatBRL(reservaIdeal.ideal)} — seis meses parados. Começar por ${formatBRL(reservaIdeal.minimum)} já resolve a maioria dos sustos.`,
       sugestao: `cria minha reserva de emergência de ${formatBRL(reservaIdeal.ideal)}`,
     });
   } else if (!reserva) {
     out.push({
       id: "sem-reserva-sem-dados",
       nivel: "dica",
-      titulo: "Comecem pela reserva de emergência",
-      texto: "Antes de qualquer sonho, vem o colchão: um dinheiro parado que cobre uns meses de vida se a renda sumir. Assim um imprevisto não vira dívida. Me conta quanto vocês gastam por mês que eu calculo o tamanho certo.",
+      titulo: "Comece pela reserva de emergência",
+      texto: "Antes de qualquer sonho, vem o colchão: um dinheiro parado que cobre uns meses de vida se a renda sumir. Assim um imprevisto não vira dívida. Me conta quanto você gasta por mês que eu calculo o tamanho certo.",
       sugestao: "me ajuda a montar minha reserva de emergência",
     });
   } else if (reserva.percent < 100 && reservaIdeal && reserva.target_amount < reservaIdeal.minimum) {
@@ -202,7 +206,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
       id: "reserva-pequena",
       nivel: "dica",
       titulo: "A reserva está menor do que deveria",
-      texto: `A reserva de vocês mira ${formatBRL(reserva.target_amount)}, mas a casa custa ${formatBRL(reservaIdeal.monthly_cost)} por mês. O mínimo saudável seria ${formatBRL(reservaIdeal.minimum)} — três meses de tranquilidade.`,
+      texto: `A reserva mira ${formatBRL(reserva.target_amount)}, mas a casa custa ${formatBRL(reservaIdeal.monthly_cost)} por mês. O mínimo saudável seria ${formatBRL(reservaIdeal.minimum)} — três meses de tranquilidade.`,
       sugestao: `aumenta minha reserva para ${formatBRL(reservaIdeal.minimum)}`,
     });
   } else if (reserva.percent >= 100) {
@@ -210,7 +214,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
       id: "reserva-completa",
       nivel: "parabens",
       titulo: "A reserva de emergência está completa",
-      texto: `${formatBRL(reserva.current_amount)} guardados. Vocês estão protegidos de um susto — agora todo dinheiro que sobrar pode ir para os sonhos, sem culpa.`,
+      texto: `${formatBRL(reserva.current_amount)} guardados. A casa está protegida de um susto — agora todo dinheiro que sobrar pode ir para os sonhos, sem culpa.`,
       sugestao: "qual sonho eu deveria priorizar agora?",
     });
   }
@@ -234,7 +238,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
     out.push({
       id: "guardou-bem",
       nivel: "parabens",
-      titulo: "Mês bom: vocês guardaram de verdade",
+      titulo: "Mês bom: sobrou dinheiro guardado",
       texto: `${formatBRL(guardar.total)} foram para o futuro — ${guardar.percent}% de tudo que entrou. Guardar 20% é a marca que quase ninguém bate.`,
     });
   }
@@ -247,8 +251,8 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
     out.push({
       id: "sem-sonho",
       nivel: "dica",
-      titulo: "Deem nome ao sonho de vocês",
-      texto: "Guardar dinheiro sem motivo é chato e a gente desiste. Guardar para a viagem, a entrada do apê ou a festa é outra história. Me conta o que vocês querem e até quando, que eu calculo quanto separar por mês.",
+      titulo: "Dê nome ao seu sonho",
+      texto: "Guardar dinheiro sem motivo é chato e a gente desiste. Guardar para a viagem, a entrada do apê ou a festa é outra história. Me conta o que você quer e até quando, que eu calculo quanto separar por mês.",
       sugestao: "quero juntar para uma viagem",
     });
   }
@@ -262,7 +266,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
         id: `sonho-feito-${meta.id}`,
         nivel: "parabens",
         titulo: `${meta.name}: conquistado!`,
-        texto: `Vocês juntaram os ${formatBRL(meta.target_amount)}. Esse era o plano e vocês cumpriram.`,
+        texto: `Os ${formatBRL(meta.target_amount)} estão juntados. Esse era o plano, e ele foi cumprido.`,
       });
     } else if (meta.monthly_needed && meta.monthly_needed > 0) {
       const guardadoNaMeta = agora.saved_in_goals;
@@ -271,7 +275,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
           id: `sonho-atrasado-${meta.id}`,
           nivel: "atencao",
           titulo: `${meta.name} está atrasando`,
-          texto: `Para chegar na data combinada, vocês precisam separar ${formatBRL(meta.monthly_needed)} por mês. Este mês foram ${formatBRL(guardadoNaMeta)}. Ou vocês aumentam o valor, ou a data anda para frente — as duas respostas valem, contanto que seja escolha.`,
+          texto: `Para chegar na data combinada, é preciso separar ${formatBRL(meta.monthly_needed)} por mês. Este mês foram ${formatBRL(guardadoNaMeta)}. Ou o valor aumenta, ou a data anda para frente — as duas respostas valem, contanto que seja escolha.`,
           sugestao: `quanto preciso guardar por mês para ${meta.name}?`,
         });
       }
@@ -290,7 +294,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
       id: "orcamento-estourado",
       nivel: "atencao",
       titulo: estourados.length === 1 ? `${nomes} estourou` : "Alguns limites estouraram",
-      texto: `Vocês passaram do limite que combinaram em ${nomes}. Não é o fim do mundo — mas se estourar todo mês, o limite está errado, não o gasto.`,
+      texto: `O limite combinado para ${nomes} foi ultrapassado. Não é o fim do mundo — mas se estourar todo mês, o limite está errado, não o gasto.`,
       sugestao: `revisa meu limite de ${estourados[0].category}`,
     });
   } else if (quaseLa.length > 0) {

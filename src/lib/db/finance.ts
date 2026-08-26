@@ -948,7 +948,7 @@ export async function createGoal(
   if (error) {
     // O índice único impede duas reservas de emergência na mesma casa.
     if (error.message.includes("idx_goals_uma_emergencia")) {
-      throw new DindiError("Vocês já têm uma reserva de emergência. Dá para aumentar a dela.");
+      throw new DindiError("Esta casa já tem uma reserva de emergência. Dá para aumentar a dela.");
     }
     throw new DindiError(error.message);
   }

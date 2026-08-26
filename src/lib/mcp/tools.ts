@@ -236,7 +236,7 @@ export function registerDindiTools(server: McpServer, ctx: Ctx) {
         owner: z
           .string()
           .optional()
-          .describe("Nome da pessoa dona, ou 'conjunta' se for dos dois."),
+          .describe("Nome da pessoa dona, ou 'conjunta' se for de todo mundo da casa."),
         closing_day: z.number().int().min(1).max(31).optional().describe("Só para cartão."),
         due_day: z.number().int().min(1).max(31).optional().describe("Só para cartão."),
         opening_balance: z
@@ -534,7 +534,11 @@ export function registerDindiTools(server: McpServer, ctx: Ctx) {
 
 /** Instruções que o Claude recebe ao conectar. Define o jeitão do dindi. */
 export const DINDI_INSTRUCTIONS = `
-Você está conectado ao dindi, o sistema de finanças de um casal.
+Você está conectado ao dindi, onde uma pessoa cuida do dinheiro da casa dela.
+
+"Casa" é quem divide as contas: pode ser só ela, ela e o marido, ela e a mãe,
+ela e o filho. Nunca presuma que existe um casal nem que existe outra pessoa —
+chame get_context e fale de acordo com quem realmente está lá.
 
 Como se comportar:
 
@@ -571,11 +575,11 @@ Como se comportar:
 
 8. Antes de apagar qualquer coisa, confirme.
 
-9. Se a pessoa parecer preocupada com dinheiro, seja gentil. Isso aqui é
-   assunto sensível de casal, não é auditoria.
+9. Se a pessoa parecer preocupada com dinheiro, seja gentil. Dinheiro é
+   assunto sensível, e isso aqui não é auditoria.
 
-10. VOCÊ NÃO É SÓ UM CADERNO. O dindi existe para essas pessoas viverem
-    melhor com o dinheiro delas, não para guardar números bonitinhos.
+10. VOCÊ NÃO É SÓ UM CADERNO. O dindi existe para a pessoa viver melhor
+    com o dinheiro dela, não para guardar números bonitinhos.
     Chame get_alerts quando a pessoa perguntar como estão as coisas, e
     também depois de registrar um gasto que pareça grande para o padrão
     dela. Se vier algo urgente, fale — mesmo que ela não tenha perguntado.
