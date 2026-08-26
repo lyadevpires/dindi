@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Shell } from "@/components/shell";
 import { Card, Empty, Pill, SectionTitle } from "@/components/ui";
 import { ConviteBotao } from "@/components/convite";
-import { revokeConnection } from "./actions";
+import { renameHousehold, revokeConnection } from "./actions";
 import { pageCtx } from "@/lib/ctx";
 import { listAccounts, listCategories, listRecurringRules } from "@/lib/db/finance";
 import { formatBRL } from "@/lib/money";
@@ -63,6 +63,22 @@ export default async function Casa() {
             ))}
           </ul>
         </Card>
+
+        <form action={renameHousehold} className="mt-3 flex items-center gap-2">
+          <input
+            name="household_name"
+            defaultValue={session.householdName}
+            maxLength={60}
+            aria-label="Nome da casa"
+            className="min-w-0 flex-1 rounded-xl border border-borda bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-tinta"
+          />
+          <button
+            type="submit"
+            className="shrink-0 rounded-xl border border-borda px-3.5 py-2.5 text-sm text-suave transition hover:bg-areia"
+          >
+            Trocar o nome
+          </button>
+        </form>
 
         {membros.length < 2 ? (
           <div className="mt-3">

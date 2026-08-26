@@ -2,6 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase/server";
+import { requireSession } from "@/lib/auth";
+
+/** Troca o nome da casa. O RLS só deixa mexer na casa de quem mora nela. */
+export async function renameHousehold(formData: FormData): Promise<void> {
+  const nome = String(formData.get("household_name") ?? "").trim();
+  if (!nome) return;
+
+  const session = await requireSession();
+  const supabase = await supabaseServer();
+  await supabase.from("households").update({ name: nome.slice(0, 60) }).eq("id", session.householdId);
+
+  revalidatePath("/", "layout");
+}
 
 /**
  * Desconecta um app (o Claude, normalmente) da casa.

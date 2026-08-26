@@ -26,26 +26,17 @@ export default async function ComecarPage(props: PageProps<"/comecar">) {
     <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-5 py-16">
       <div className="mb-8 text-center">
         <Logo size={44} />
-        <h1 className="mt-4 text-2xl font-bold tracking-tight">Vamos montar sua casa</h1>
-        <p className="mt-2 text-sm text-suave">
-          A &ldquo;casa&rdquo; é o espaço onde ficam as contas de vocês dois.
-        </p>
+        <h1 className="mt-4 text-2xl font-bold tracking-tight">Vamos começar</h1>
+        <p className="mt-2 text-sm text-suave">Falta só uma coisa.</p>
       </div>
 
       <div className="rounded-2xl border border-borda bg-white p-6">
-        <h2 className="mb-4 font-semibold">Criar uma casa nova</h2>
-        <ActionForm action={createHousehold} submitLabel="Criar casa" hidden={{ next }}>
+        <ActionForm action={createHousehold} submitLabel="Começar" hidden={{ next }}>
           <Field
-            label="Como você quer ser chamado?"
+            label="Como a gente te chama?"
             name="display_name"
-            placeholder="Ex: Maria"
+            placeholder="Ex: Lya"
             hint="É esse nome que o Claude vai usar para saber quem gastou o quê."
-          />
-          <Field
-            label="Nome da casa"
-            name="household_name"
-            placeholder="Ex: Casa da Maria e do João"
-            required={false}
           />
         </ActionForm>
       </div>

@@ -79,7 +79,6 @@ export async function createHousehold(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const householdName = String(formData.get("household_name") ?? "").trim();
   const displayName = String(formData.get("display_name") ?? "").trim();
   const next = safeNext(formData.get("next"));
 
@@ -87,7 +86,8 @@ export async function createHousehold(
 
   const supabase = await supabaseServer();
   const { error } = await supabase.rpc("bootstrap_household", {
-    p_household_name: householdName || "Nossa casa",
+    // A casa nasce batizada com o nome da pessoa; dá para renomear em /casa.
+    p_household_name: `Casa da ${displayName}`,
     p_display_name: displayName,
   });
 
