@@ -5,14 +5,8 @@ import { Card, Empty, Pill, Progress, SectionTitle } from "@/components/ui";
 import { Conselhos } from "@/components/conselhos";
 import { Grupos } from "@/components/grupos";
 import { pageCtx } from "@/lib/ctx";
-import {
-  getBalance,
-  getBudgetStatus,
-  getGoalProgress,
-  getSpendingByBucket,
-  listTransactions,
-} from "@/lib/db/finance";
-import { getConselhos } from "@/lib/db/conselhos";
+import { listTransactions } from "@/lib/db/finance";
+import { getRetratoDoMes, montarConselhos } from "@/lib/db/conselhos";
 import { formatBRL } from "@/lib/money";
 import { formatDateShort, monthLabel, today } from "@/lib/dates";
 
@@ -21,14 +15,14 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const { session, ctx } = await pageCtx();
 
-  const [metas, saldos, orcamento, extrato, grupos, conselhos] = await Promise.all([
-    getGoalProgress(ctx),
-    getBalance(ctx),
-    getBudgetStatus(ctx),
+  // Um retrato do mês serve as duas coisas: os números da tela e os conselhos.
+  const [retrato, extrato] = await Promise.all([
+    getRetratoDoMes(ctx),
     listTransactions(ctx, { month: today(), limit: 8 }),
-    getSpendingByBucket(ctx),
-    getConselhos(ctx),
   ]);
+
+  const { metas, saldos, orcamento, agora: grupos } = retrato;
+  const conselhos = montarConselhos(retrato);
 
   const semNada = saldos.accounts.length === 0 && extrato.count === 0 && metas.length === 0;
   const reserva = metas.find((m) => m.kind === "emergencia");

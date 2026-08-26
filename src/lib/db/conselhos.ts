@@ -51,7 +51,15 @@ function fracaoDoMes(mes: string): number {
   return Math.min(diaAtual / diasNoMes, 1);
 }
 
-export async function getConselhos(ctx: Ctx, month?: string): Promise<Conselho[]> {
+/**
+ * Tudo que os conselhos precisam saber sobre o mês, buscado de uma vez só.
+ *
+ * Fica separado porque a tela inicial mostra esses mesmos números — assim ela
+ * busca uma vez e usa para as duas coisas, em vez de perguntar tudo em dobro.
+ */
+export type RetratoDoMes = Awaited<ReturnType<typeof getRetratoDoMes>>;
+
+export async function getRetratoDoMes(ctx: Ctx, month?: string) {
   const mes = monthStart(month ?? today());
   const mesPassado = addMonths(mes, -1);
 
@@ -63,6 +71,16 @@ export async function getConselhos(ctx: Ctx, month?: string): Promise<Conselho[]
     getBudgetStatus(ctx, mes),
     suggestEmergencyFund(ctx),
   ]);
+
+  return { mes, agora, antes, saldos, metas, orcamento, reservaIdeal };
+}
+
+export async function getConselhos(ctx: Ctx, month?: string): Promise<Conselho[]> {
+  return montarConselhos(await getRetratoDoMes(ctx, month));
+}
+
+export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
+  const { mes, agora, antes, saldos, metas, orcamento, reservaIdeal } = retrato;
 
   const grupo = (b: "fixo" | "dia_a_dia" | "lazer" | "guardar") =>
     agora.groups.find((g) => g.bucket === b)!;

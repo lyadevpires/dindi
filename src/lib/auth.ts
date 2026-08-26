@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -10,23 +11,28 @@ export type SessionInfo = {
   role: "owner" | "member";
 };
 
-/** Quem está logado agora? Devolve null se ninguém estiver. */
-export async function getUser() {
+/**
+ * Quem está logado agora? Devolve null se ninguém estiver.
+ *
+ * Vai com `cache()` porque conferir o login é uma ida ao servidor do Supabase,
+ * e uma mesma tela pergunta isso várias vezes. Assim a pergunta é feita uma vez
+ * só por visita — o resto é resposta guardada.
+ */
+export const getUser = cache(async () => {
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getUser();
   return data.user ?? null;
-}
+});
 
 /**
  * Sessão completa: usuário + casa. Devolve null se não estiver logado
  * ou se ainda não tiver criado/entrado numa casa.
  */
-export async function getSession(): Promise<SessionInfo | null> {
-  const supabase = await supabaseServer();
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
+export const getSession = cache(async (): Promise<SessionInfo | null> => {
+  const user = await getUser();
   if (!user) return null;
 
+  const supabase = await supabaseServer();
   const { data: member } = await supabase
     .from("household_members")
     .select("household_id, display_name, role, households(name)")
@@ -45,13 +51,11 @@ export async function getSession(): Promise<SessionInfo | null> {
     displayName: member.display_name,
     role: member.role as "owner" | "member",
   };
-}
+});
 
 /** Igual ao getSession, mas manda para o login/onboarding se faltar algo. */
 export async function requireSession(): Promise<SessionInfo> {
-  const supabase = await supabaseServer();
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) redirect("/entrar");
+  if (!(await getUser())) redirect("/entrar");
 
   const session = await getSession();
   if (!session) redirect("/comecar");
