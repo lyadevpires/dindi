@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prebuild": "node scripts/gen-migrations.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
