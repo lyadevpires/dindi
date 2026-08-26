@@ -35,6 +35,14 @@ update categories set bucket = 'guardar'
 
 update categories set bucket = 'receita' where kind = 'income';
 
+-- As casas antigas nasceram sem o grupo "Guardar" — ele não existia. Dá as duas
+-- categorias para quem ainda não tem, sem mexer em quem já criou as suas.
+insert into categories (household_id, name, kind, bucket, emoji)
+select h.id, c.name, 'expense', 'guardar', c.emoji
+  from households h
+ cross join (values ('Reserva', '🐷'), ('Investimentos', '🌱')) as c(name, emoji)
+    on conflict (household_id, name) do nothing;
+
 create index if not exists idx_categories_bucket on categories(household_id, bucket);
 
 -- ---------------------------------------------------------------------
