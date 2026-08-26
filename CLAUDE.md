@@ -6,8 +6,12 @@ Finanças pessoais onde **todo o registro acontece conversando com o Claude via 
 O site é só visualização — não existe formulário de cadastro de gasto em lugar nenhum.
 
 **Não é um app de casal.** É uma pessoa cuidando do dinheiro dela, que pode convidar
-quem divide as contas — marido, mãe, irmão, filho — ou ninguém. A casa começa com uma
-pessoa só e não tem limite de membros.
+quem divide as contas — marido, mãe, irmão, filho — ou ninguém. Começa com uma pessoa
+só e não tem limite de membros.
+
+**O conjunto se chama "o seu dindi". Nunca "a casa", nunca "vocês".** Fale sempre com
+uma pessoa ("você"). No banco as tabelas continuam `households` / `household_id` por
+história — a troca foi só de escrita, de propósito. Não renomeie o schema.
 
 Quem toca este projeto é uma pessoa **não-técnica** fazendo vibe coding. Explique em
 termos de produto ("agora o site mostra as metas"), nunca em termos técnicos. Faça tudo
@@ -15,7 +19,7 @@ por CLI; nunca peça para ela rodar comando, abrir arquivo ou colar código.
 
 ## Regras que não se quebram
 
-- **Sempre com escopo de casa.** Toda query filtra `household_id`. O app é multi-tenant.
+- **Sempre com escopo.** Toda query filtra `household_id`. O app é multi-tenant.
 - **`supabaseAdmin()` só no MCP e no cron.** Ele passa por cima do RLS, então todo
   acesso a dados vai por `src/lib/db/*`, que exige um `Ctx { db, householdId, userId }`.
   As telas do site usam `pageCtx()`, que usa o cliente com cookie e mantém o RLS ligado.
