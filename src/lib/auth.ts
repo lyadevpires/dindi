@@ -14,14 +14,20 @@ export type SessionInfo = {
 /**
  * Quem está logado agora? Devolve null se ninguém estiver.
  *
- * Vai com `cache()` porque conferir o login é uma ida ao servidor do Supabase,
- * e uma mesma tela pergunta isso várias vezes. Assim a pergunta é feita uma vez
- * só por visita — o resto é resposta guardada.
+ * Usa `getClaims()` e não `getUser()`: os dois conferem a assinatura do token,
+ * mas o `getUser()` pergunta ao servidor do Supabase toda vez, e essa espera
+ * aparecia em cada troca de tela. O `getClaims()` confere na hora, com a chave
+ * pública do projeto. O `cache()` completa o serviço: uma conferência por visita.
  */
 export const getUser = cache(async () => {
   const supabase = await supabaseServer();
-  const { data } = await supabase.auth.getUser();
-  return data.user ?? null;
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (!claims?.sub) return null;
+  return {
+    id: claims.sub,
+    email: typeof claims.email === "string" ? claims.email : null,
+  };
 });
 
 /**
