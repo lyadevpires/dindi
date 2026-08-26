@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# dindi
 
-## Getting Started
+**As finanças de vocês dois, sem planilha e sem formulário.**
 
-First, run the development server:
+Você conversa com o Claude do jeito que fala com uma pessoa:
+
+> "gastei 45 no mercado"
+> "comprei uma cadeira de 900 em 6x no cartão"
+> "quanto sobrou esse mês?"
+> "guardei 500 na reserva"
+
+O Claude anota. Este site mostra.
+
+---
+
+## O que o dindi cuida sozinho
+
+- **Contas e cartões** — quanto tem em cada lugar, quanto deve em cada cartão.
+- **Fatura do cartão** — sabe em qual fatura cada compra cai, divide parcelas certinho
+  e fecha a fatura no dia que fecha.
+- **Contas que se repetem** — aluguel, salário, assinatura. Lança sozinho todo mês.
+- **Orçamento** — você diz o limite por categoria e ele avisa quando está perto.
+- **Metas** — a reserva, a viagem, a entrada do apê. É a primeira coisa que aparece.
+
+Tudo é da **casa**: você e seu par veem os mesmos números, cada um entrando com a
+própria conta.
+
+---
+
+## Como começar
+
+1. Crie sua conta em **/criar-conta**.
+2. Dê um nome para a casa de vocês.
+3. Em **Casa**, clique em *Convidar meu par* e mande o código para ele.
+4. Em **Conectar**, siga os 4 passos para ligar o dindi no seu Claude.
+5. Comece a falar.
+
+---
+
+## Para quem for mexer no código
+
+Next.js + Supabase, hospedado na Vercel. O Claude conversa com o dindi por um
+servidor MCP com OAuth 2.1.
 
 ```bash
+cp .env.example .env.local   # preencha as chaves do Supabase
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+No Supabase, rode os arquivos de `supabase/` na ordem (001, 002, 003) no SQL Editor.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Detalhes de arquitetura e as regras que não se quebram estão em `CLAUDE.md`.

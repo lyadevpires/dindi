@@ -1,26 +1,38 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* -------------------------------------------------------------------
+   Cores do dindi. Mexa aqui e o app inteiro muda de cara.
+   ------------------------------------------------------------------- */
+@theme {
+  --color-creme: #fdf8f3;
+  --color-areia: #f2e8dc;
+  --color-borda: #e6dacb;
+  --color-tinta: #2c2420;
+  --color-suave: #7a6a5e;
+
+  --color-verdinho: #2f9e6b;
+  --color-verdinho-claro: #e6f5ee;
+  --color-vermelhinho: #d15a52;
+  --color-vermelhinho-claro: #fbeceb;
+  --color-amarelinho: #dc9631;
+  --color-amarelinho-claro: #fdf2e0;
+  --color-azulzinho: #4a7fd4;
+  --color-azulzinho-claro: #eaf1fc;
+  --color-roxinho: #7b62c9;
+  --color-roxinho-claro: #f0ecfb;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-creme);
+  color: var(--color-tinta);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Números de dinheiro alinhados em coluna */
+.tabular {
+  font-variant-numeric: tabular-nums;
 }

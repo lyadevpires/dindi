@@ -1,69 +1,238 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Shell } from "@/components/shell";
+import { Dindi } from "@/components/dindi";
+import { Card, Empty, Pill, Progress, SectionTitle } from "@/components/ui";
+import { pageCtx } from "@/lib/ctx";
+import { getBalance, getBudgetStatus, getGoalProgress, listTransactions } from "@/lib/db/finance";
+import { formatBRL } from "@/lib/money";
+import { formatDateShort, monthLabel, today } from "@/lib/dates";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const { session, ctx } = await pageCtx();
+
+  const [metas, saldos, orcamento, extrato] = await Promise.all([
+    getGoalProgress(ctx),
+    getBalance(ctx),
+    getBudgetStatus(ctx),
+    listTransactions(ctx, { month: today(), limit: 8 }),
+  ]);
+
+  const semNada = saldos.accounts.length === 0 && extrato.count === 0 && metas.length === 0;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <Shell session={session} active="/">
+      {semNada ? <PrimeiroDia nome={session.displayName} /> : null}
+
+      {/* ---------------- Metas ---------------- */}
+      <section className="mb-8">
+        <SectionTitle
+          action={
+            <Link href="/metas" className="text-sm text-suave underline underline-offset-2">
+              ver todas
+            </Link>
+          }
+        >
+          Nossos sonhos
+        </SectionTitle>
+
+        {metas.length === 0 ? (
+          <Empty>
+            Ainda não tem nenhuma meta. Peça pro Claude: <em>&ldquo;cria uma meta de
+            reserva de emergência de 10 mil&rdquo;</em>.
+          </Empty>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {metas.slice(0, 4).map((m) => (
+              <Card key={m.id}>
+                <div className="mb-2 flex items-baseline justify-between gap-2">
+                  <h3 className="font-semibold">{m.name}</h3>
+                  <span className="tabular text-sm text-suave">{m.percent}%</span>
+                </div>
+                <Progress percent={m.percent} tone={m.percent >= 100 ? "verde" : "roxo"} />
+                <p className="mt-2 text-sm text-suave">
+                  <span className="tabular font-medium text-tinta">
+                    {formatBRL(m.current_amount)}
+                  </span>{" "}
+                  de <span className="tabular">{formatBRL(m.target_amount)}</span>
+                </p>
+                {m.monthly_needed ? (
+                  <p className="mt-1 text-xs text-suave">
+                    Guardando {formatBRL(m.monthly_needed)} por mês vocês chegam lá.
+                  </p>
+                ) : null}
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ---------------- Saldos ---------------- */}
+      <section className="mb-8">
+        <SectionTitle>Onde está o dinheiro</SectionTitle>
+
+        <div className="mb-3 grid gap-3 sm:grid-cols-3">
+          <Card>
+            <p className="text-xs uppercase tracking-wide text-suave">Nas contas</p>
+            <p className="tabular mt-1 text-2xl font-bold">
+              {formatBRL(saldos.total_in_accounts)}
+            </p>
+          </Card>
+          <Card>
+            <p className="text-xs uppercase tracking-wide text-suave">Nos cartões</p>
+            <p className="tabular mt-1 text-2xl font-bold text-vermelhinho">
+              {formatBRL(saldos.total_credit_card_debt)}
+            </p>
+          </Card>
+          <Card>
+            <p className="text-xs uppercase tracking-wide text-suave">Sobra de verdade</p>
+            <p
+              className={`tabular mt-1 text-2xl font-bold ${
+                saldos.net_worth < 0 ? "text-vermelhinho" : "text-verdinho"
+              }`}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+              {formatBRL(saldos.net_worth)}
+            </p>
+          </Card>
+        </div>
+
+        {saldos.accounts.length === 0 ? (
+          <Empty>
+            Nenhuma conta cadastrada ainda. Peça pro Claude:{" "}
+            <em>&ldquo;cria a conta do Nubank com 2 mil de saldo&rdquo;</em>.
+          </Empty>
+        ) : (
+          <Card className="p-0">
+            <ul className="divide-y divide-borda">
+              {saldos.accounts.map((a) => (
+                <li key={a.account} className="flex items-center justify-between gap-3 px-5 py-3">
+                  <span className="flex items-center gap-2">
+                    <span className="font-medium">{a.account}</span>
+                    <Pill tone={a.type === "credit_card" ? "roxo" : "azul"}>
+                      {a.type === "credit_card"
+                        ? "cartão"
+                        : a.type === "savings"
+                          ? "poupança"
+                          : "conta"}
+                    </Pill>
+                  </span>
+                  <span
+                    className={`tabular font-semibold ${
+                      a.balance < 0 ? "text-vermelhinho" : ""
+                    }`}
+                  >
+                    {formatBRL(a.balance)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+      </section>
+
+      {/* ---------------- Orçamento ---------------- */}
+      {orcamento.budgets.length > 0 ? (
+        <section className="mb-8">
+          <SectionTitle
+            action={
+              <Link href="/orcamento" className="text-sm text-suave underline underline-offset-2">
+                ver tudo
+              </Link>
+            }
+          >
+            Orçamento de {monthLabel(orcamento.month)}
+          </SectionTitle>
+          <Card>
+            <ul className="space-y-4">
+              {orcamento.budgets.slice(0, 4).map((b) => (
+                <li key={b.category}>
+                  <div className="mb-1.5 flex items-baseline justify-between gap-2 text-sm">
+                    <span className="font-medium">{b.category}</span>
+                    <span className="tabular text-suave">
+                      {formatBRL(b.spent)} de {formatBRL(b.limit_amount)}
+                    </span>
+                  </div>
+                  <Progress
+                    percent={b.percent_used}
+                    tone={
+                      b.status === "estourou" ? "vermelho" : b.status === "atenção" ? "amarelo" : "verde"
+                    }
+                  />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </section>
+      ) : null}
+
+      {/* ---------------- Últimos lançamentos ---------------- */}
+      <section>
+        <SectionTitle
+          action={
+            <Link href="/extrato" className="text-sm text-suave underline underline-offset-2">
+              extrato completo
+            </Link>
+          }
+        >
+          O que rolou este mês
+        </SectionTitle>
+
+        {extrato.count === 0 ? (
+          <Empty>
+            Nada lançado em {monthLabel(today())} ainda. Diga pro Claude:{" "}
+            <em>&ldquo;gastei 45 reais no mercado&rdquo;</em>.
+          </Empty>
+        ) : (
+          <Card className="p-0">
+            <ul className="divide-y divide-borda">
+              {extrato.transactions.map((t) => (
+                <li key={t.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{t.description}</p>
+                    <p className="truncate text-xs text-suave">
+                      {formatDateShort(t.date)} · {t.account}
+                      {t.category ? ` · ${t.category}` : ""}
+                      {t.person ? ` · ${t.person}` : ""}
+                    </p>
+                  </div>
+                  <span
+                    className={`tabular shrink-0 font-semibold ${
+                      t.type === "income" ? "text-verdinho" : ""
+                    }`}
+                  >
+                    {t.type === "income" ? "+" : "−"} {formatBRL(t.amount)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+      </section>
+    </Shell>
+  );
+}
+
+/** Boas-vindas de quem acabou de criar a casa e ainda não tem nada. */
+function PrimeiroDia({ nome }: { nome: string }) {
+  return (
+    <Card className="mb-8 bg-areia/50">
+      <div className="flex items-start gap-4">
+        <Dindi size={52} mood="feliz" />
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Oi, {nome}!</h1>
+          <p className="mt-1 text-sm text-suave">
+            Este site é só a vitrine — quem anota tudo é o Claude. Conecte o dindi lá e
+            comece dizendo suas contas e seus gastos com palavras normais.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/conectar"
+            className="mt-3 inline-block rounded-lg bg-tinta px-3.5 py-2 text-sm font-medium text-creme transition hover:opacity-90"
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            Conectar o Claude
+          </Link>
         </div>
-      </main>
-    </div>
+      </div>
+    </Card>
   );
 }
