@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { pageCtx } from "@/lib/ctx";
-import { addTransaction } from "@/lib/db/finance";
+import { addTransaction, createAccount } from "@/lib/db/finance";
 import { DindiError } from "@/lib/db/types";
 import { formatBRL } from "@/lib/money";
 import type { ActionState } from "@/app/auth/actions";
@@ -49,6 +49,36 @@ export async function lancar(_prev: ActionState, formData: FormData): Promise<Ac
               t.invoice_month ? ` — vai na fatura do ${t.account}` : ` — saiu do ${t.account}`
             }.`,
     };
+  } catch (e) {
+    if (e instanceof DindiError) return { error: e.message };
+    throw e;
+  }
+}
+
+/**
+ * A primeira conta, criada na hora de anotar o primeiro gasto.
+ *
+ * Sem ela não existe onde lançar, e mandar a pessoa "pedir pro Claude
+ * cadastrar" antes de conseguir usar o botão seria um beco sem saída.
+ * Cartão de crédito pede dia de fechamento e vencimento — isso fica com o
+ * Claude, aqui é só o lugar simples onde o dinheiro está.
+ */
+export async function criarPrimeiraConta(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const nome = String(formData.get("nome") ?? "").trim();
+  if (!nome) return { error: "Dê um nome, tipo Nubank ou Carteira." };
+
+  try {
+    const { ctx } = await pageCtx();
+    await createAccount(ctx, {
+      name: nome,
+      type: "checking",
+      opening_balance: parseValor(String(formData.get("saldo") ?? "")) ?? 0,
+    });
+    revalidatePath("/", "layout");
+    return { ok: `Pronto, ${nome} criada.` };
   } catch (e) {
     if (e instanceof DindiError) return { error: e.message };
     throw e;

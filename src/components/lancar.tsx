@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { lancar } from "@/app/(app)/actions";
+import { criarPrimeiraConta, lancar } from "@/app/(app)/actions";
 import type { ActionState } from "@/app/auth/actions";
 
 export type CategoriaOpcao = {
@@ -31,9 +31,6 @@ export function BotaoLancar({
 }) {
   const dialogo = useRef<HTMLDialogElement>(null);
 
-  // Sem conta cadastrada não há onde lançar; o Claude cadastra a primeira.
-  if (contas.length === 0) return null;
-
   return (
     <>
       <button
@@ -56,14 +53,78 @@ export function BotaoLancar({
         }}
         className="w-[calc(100vw-2rem)] max-w-sm rounded-2xl border border-borda bg-white p-0 text-tinta backdrop:bg-tinta/40 backdrop:backdrop-blur-sm"
       >
-        <Formulario
-          categorias={categorias}
-          contas={contas}
-          hoje={hoje}
-          fechar={() => dialogo.current?.close()}
-        />
+        {/*
+          Sem nenhuma conta não existe onde lançar. Em vez de esconder o botão
+          (e deixar a pessoa sem saída), a primeira coisa que ele pergunta é
+          onde o dinheiro está.
+        */}
+        {contas.length === 0 ? (
+          <PrimeiraConta fechar={() => dialogo.current?.close()} />
+        ) : (
+          <Formulario
+            categorias={categorias}
+            contas={contas}
+            hoje={hoje}
+            fechar={() => dialogo.current?.close()}
+          />
+        )}
       </dialog>
     </>
+  );
+}
+
+function PrimeiraConta({ fechar }: { fechar: () => void }) {
+  const [estado, acao] = useActionState<ActionState, FormData>(criarPrimeiraConta, null);
+
+  return (
+    <form action={acao} className="space-y-4 p-5">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold tracking-tight">Onde fica seu dinheiro?</h2>
+        <button
+          type="button"
+          onClick={fechar}
+          className="rounded-lg px-2 py-1 text-sm text-suave transition hover:bg-areia"
+        >
+          Fechar
+        </button>
+      </div>
+
+      <p className="text-sm text-suave">
+        Antes de anotar o primeiro gasto, o dindi precisa saber de onde ele sai. Cartão
+        de crédito é melhor cadastrar conversando com o Claude, porque tem dia de
+        fechamento.
+      </p>
+
+      <input
+        name="nome"
+        required
+        autoComplete="off"
+        placeholder="Nubank, Itaú, Carteira…"
+        className="w-full rounded-xl border border-borda bg-white px-3.5 py-2.5 text-sm outline-none transition placeholder:text-suave/60 focus:border-tinta"
+      />
+
+      <label className="block">
+        <span className="mb-1.5 block text-sm font-medium">Quanto tem aí hoje?</span>
+        <div className="flex items-center gap-2 rounded-xl border border-borda bg-white px-3.5 py-2.5 focus-within:border-tinta">
+          <span className="text-sm text-suave">R$</span>
+          <input
+            name="saldo"
+            inputMode="decimal"
+            autoComplete="off"
+            placeholder="0,00"
+            className="tabular w-full min-w-0 text-sm outline-none placeholder:text-suave/60"
+          />
+        </div>
+      </label>
+
+      {estado?.error ? (
+        <p className="rounded-xl bg-vermelhinho-claro px-3.5 py-2.5 text-sm text-vermelhinho">
+          {estado.error}
+        </p>
+      ) : null}
+
+      <Salvar rotulo="Criar conta" />
+    </form>
   );
 }
 
@@ -226,12 +287,12 @@ function Formulario({
         </p>
       ) : null}
 
-      <Salvar />
+      <Salvar rotulo="Anotar" />
     </form>
   );
 }
 
-function Salvar() {
+function Salvar({ rotulo }: { rotulo: string }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -239,7 +300,7 @@ function Salvar() {
       disabled={pending}
       className="w-full rounded-xl bg-tinta px-4 py-3 text-sm font-semibold text-creme transition hover:opacity-90 disabled:opacity-50"
     >
-      {pending ? "Anotando..." : "Anotar"}
+      {pending ? "Só um segundo..." : rotulo}
     </button>
   );
 }
