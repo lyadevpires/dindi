@@ -51,14 +51,20 @@ export default async function Metas() {
               return (
                 <Card key={m.id}>
                   <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                    <h2 className="flex items-center gap-2 text-lg font-semibold">
+                    <h2 className="flex flex-wrap items-center gap-2 text-lg font-semibold">
                       {m.name}
+                      {m.kind === "emergencia" ? (
+                        <Pill tone="azul">reserva de emergência</Pill>
+                      ) : null}
                       {m.percent >= 100 ? <Pill tone="verde">conquistada!</Pill> : null}
                     </h2>
                     <p className="tabular text-sm text-suave">{m.percent}%</p>
                   </div>
 
-                  <Progress percent={m.percent} tone={m.percent >= 100 ? "verde" : "roxo"} />
+                  <Progress
+                    percent={m.percent}
+                    tone={m.percent >= 100 ? "verde" : m.kind === "emergencia" ? "azul" : "roxo"}
+                  />
 
                   <p className="mt-2 text-sm text-suave">
                     <span className="tabular font-medium text-tinta">

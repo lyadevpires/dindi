@@ -1,0 +1,289 @@
+import { addMonths, monthStart, today } from "@/lib/dates";
+import { formatBRL, num, round2 } from "@/lib/money";
+import {
+  getBalance,
+  getBudgetStatus,
+  getGoalProgress,
+  getSpendingByBucket,
+  suggestEmergencyFund,
+} from "./finance";
+import type { Ctx } from "./types";
+
+/**
+ * Os alertas do dindi.
+ *
+ * A ideia: o site e o Claude não devem só mostrar número — devem cutucar
+ * quando algo sai do lugar e ensinar o próximo passo. Cada conselho tem
+ * um nível, um título curto e uma frase que explica o porquê em português
+ * de gente. Nada de "sua taxa de poupança está em 4%".
+ *
+ * Níveis:
+ *   urgente  → dinheiro vai faltar, precisa agir agora
+ *   atencao  → ainda dá tempo de corrigir este mês
+ *   dica     → não tem nada errado, é o próximo passo para melhorar
+ *   parabens → deu certo, e é importante dizer isso também
+ */
+export type Nivel = "urgente" | "atencao" | "dica" | "parabens";
+
+export type Conselho = {
+  id: string;
+  nivel: Nivel;
+  titulo: string;
+  texto: string;
+  /** O que falar pro Claude para resolver. Vira botão/sugestão na tela. */
+  sugestao?: string;
+};
+
+const ORDEM: Record<Nivel, number> = { urgente: 0, atencao: 1, dica: 2, parabens: 3 };
+
+/** Que fatia do mês já passou (0 a 1). Serve para projetar o gasto até o dia 31. */
+function fracaoDoMes(mes: string): number {
+  const inicio = new Date(`${mes}T00:00:00`);
+  const hoje = new Date(`${today()}T00:00:00`);
+  const diasNoMes = new Date(
+    inicio.getUTCFullYear(),
+    inicio.getUTCMonth() + 1,
+    0
+  ).getDate();
+
+  if (hoje < inicio) return 0;
+  const diaAtual = hoje.getUTCMonth() === inicio.getUTCMonth() ? hoje.getUTCDate() : diasNoMes;
+  return Math.min(diaAtual / diasNoMes, 1);
+}
+
+export async function getConselhos(ctx: Ctx, month?: string): Promise<Conselho[]> {
+  const mes = monthStart(month ?? today());
+  const mesPassado = addMonths(mes, -1);
+
+  const [agora, antes, saldos, metas, orcamento, reservaIdeal] = await Promise.all([
+    getSpendingByBucket(ctx, mes),
+    getSpendingByBucket(ctx, mesPassado),
+    getBalance(ctx),
+    getGoalProgress(ctx),
+    getBudgetStatus(ctx, mes),
+    suggestEmergencyFund(ctx),
+  ]);
+
+  const grupo = (b: "fixo" | "dia_a_dia" | "lazer" | "guardar") =>
+    agora.groups.find((g) => g.bucket === b)!;
+
+  const fixo = grupo("fixo");
+  const lazer = grupo("lazer");
+  const guardar = grupo("guardar");
+
+  const out: Conselho[] = [];
+  const renda = agora.income;
+  const gasto = agora.total_spent;
+
+  // -------------------------------------------------------------------
+  // 1. O mês fechou no vermelho
+  // -------------------------------------------------------------------
+  if (renda > 0 && gasto + agora.saved > renda) {
+    const buraco = round2(gasto + agora.saved - renda);
+    out.push({
+      id: "mes-no-vermelho",
+      nivel: "urgente",
+      titulo: "Vocês gastaram mais do que entrou",
+      texto: `Entrou ${formatBRL(renda)} e saiu ${formatBRL(round2(gasto + agora.saved))}. São ${formatBRL(buraco)} a mais do que a casa ganhou este mês. O buraco vai sair de algum lugar: da reserva ou do cartão.`,
+      sugestao: "onde dá para cortar este mês?",
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // 2. No ritmo atual, o mês não fecha
+  // -------------------------------------------------------------------
+  const fracao = fracaoDoMes(mes);
+  if (renda > 0 && fracao > 0.25 && fracao < 0.95) {
+    const projecao = round2(gasto / fracao);
+    if (projecao > renda && gasto <= renda) {
+      out.push({
+        id: "ritmo-perigoso",
+        nivel: "atencao",
+        titulo: "Nesse ritmo o mês não fecha",
+        texto: `Faltando ${Math.round((1 - fracao) * 30)} dias, vocês já gastaram ${formatBRL(gasto)}. Mantendo esse ritmo, o mês termina em ${formatBRL(projecao)} — mais do que os ${formatBRL(renda)} que entraram.`,
+        sugestao: "quanto posso gastar por dia até o fim do mês?",
+      });
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // 3. As contas fixas comem quase tudo
+  // -------------------------------------------------------------------
+  if (renda > 0 && fixo.total > 0 && fixo.percent >= 55) {
+    out.push({
+      id: "fixo-pesado",
+      nivel: "atencao",
+      titulo: "As contas fixas estão pesadas",
+      texto: `${fixo.percent}% do que entra já vai embora em contas fixas (${formatBRL(fixo.total)}), e isso é o que vocês não escolhem no mês. Acima de 50% sobra pouco espaço para respirar. Vale olhar assinatura parada e plano que dá para baixar.`,
+      sugestao: "quais contas fixas eu poderia cortar ou renegociar?",
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // 4. Lazer explodiu — o alerta de "comprando além da conta"
+  // -------------------------------------------------------------------
+  const lazerAntes = antes.groups.find((g) => g.bucket === "lazer")!.total;
+  if (renda > 0 && lazer.total > 0 && lazer.percent >= 25) {
+    const top = lazer.categories[0];
+    out.push({
+      id: "lazer-alto",
+      nivel: "atencao",
+      titulo: "O lazer passou do ponto",
+      texto: `${formatBRL(lazer.total)} em lazer, ${lazer.percent}% de tudo que entrou.${top ? ` A maior parte foi em ${top.name} (${formatBRL(top.total)}).` : ""} Lazer é importante, mas acima de 20% ele começa a comer o dinheiro dos sonhos de vocês.`,
+      sugestao: "me ajuda a definir um limite de lazer para o mês que vem",
+    });
+  } else if (lazerAntes > 0 && lazer.total > lazerAntes * 1.6 && fracao > 0.6) {
+    const aMais = round2(lazer.total - lazerAntes);
+    out.push({
+      id: "lazer-subiu",
+      nivel: "atencao",
+      titulo: "Vocês gastaram bem mais com lazer",
+      texto: `Foram ${formatBRL(aMais)} a mais que no mês passado em lazer. Não é proibido — só vale saber se foi escolha ou se passou batido.`,
+      sugestao: "o que mudou no meu lazer em relação ao mês passado?",
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // 5. A fatura do cartão é maior que o dinheiro em conta
+  // -------------------------------------------------------------------
+  const emConta = num(saldos.total_in_accounts);
+  const fatura = num(saldos.total_credit_card_debt);
+  if (fatura > 0 && fatura > emConta) {
+    out.push({
+      id: "fatura-maior-que-conta",
+      nivel: "urgente",
+      titulo: "A fatura está maior que o dinheiro em conta",
+      texto: `Vocês devem ${formatBRL(fatura)} no cartão e têm ${formatBRL(emConta)} disponível. Se a fatura vencer hoje, não dá para pagar tudo. Pagar só o mínimo é a forma mais cara de dever dinheiro que existe.`,
+      sugestao: "monta um plano para eu pagar a fatura inteira",
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // 6. Reserva de emergência — o conselho mais importante do app
+  // -------------------------------------------------------------------
+  const reserva = metas.find((m) => m.kind === "emergencia");
+
+  if (!reserva && reservaIdeal) {
+    out.push({
+      id: "sem-reserva",
+      nivel: "dica",
+      titulo: "Vocês ainda não têm reserva de emergência",
+      texto: `Reserva de emergência é o dinheiro que impede que um pneu furado ou um dente quebrado vire dívida no cartão. Pelo que vocês gastam para viver (${formatBRL(reservaIdeal.monthly_cost)} por mês), o ideal é chegar em ${formatBRL(reservaIdeal.ideal)} — seis meses parados. Começar por ${formatBRL(reservaIdeal.minimum)} já resolve a maioria dos sustos.`,
+      sugestao: `cria minha reserva de emergência de ${formatBRL(reservaIdeal.ideal)}`,
+    });
+  } else if (!reserva) {
+    out.push({
+      id: "sem-reserva-sem-dados",
+      nivel: "dica",
+      titulo: "Comecem pela reserva de emergência",
+      texto: "Antes de qualquer sonho, vem o colchão: um dinheiro parado que cobre uns meses de vida se a renda sumir. Assim um imprevisto não vira dívida. Me conta quanto vocês gastam por mês que eu calculo o tamanho certo.",
+      sugestao: "me ajuda a montar minha reserva de emergência",
+    });
+  } else if (reserva.percent < 100 && reservaIdeal && reserva.target_amount < reservaIdeal.minimum) {
+    out.push({
+      id: "reserva-pequena",
+      nivel: "dica",
+      titulo: "A reserva está menor do que deveria",
+      texto: `A reserva de vocês mira ${formatBRL(reserva.target_amount)}, mas a casa custa ${formatBRL(reservaIdeal.monthly_cost)} por mês. O mínimo saudável seria ${formatBRL(reservaIdeal.minimum)} — três meses de tranquilidade.`,
+      sugestao: `aumenta minha reserva para ${formatBRL(reservaIdeal.minimum)}`,
+    });
+  } else if (reserva.percent >= 100) {
+    out.push({
+      id: "reserva-completa",
+      nivel: "parabens",
+      titulo: "A reserva de emergência está completa",
+      texto: `${formatBRL(reserva.current_amount)} guardados. Vocês estão protegidos de um susto — agora todo dinheiro que sobrar pode ir para os sonhos, sem culpa.`,
+      sugestao: "qual sonho eu deveria priorizar agora?",
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // 7. Guardar: nada foi para o futuro este mês
+  // -------------------------------------------------------------------
+  if (renda > 0 && guardar.total === 0 && fracao > 0.7) {
+    const sobrou = round2(renda - gasto);
+    out.push({
+      id: "nao-guardou",
+      nivel: sobrou > 0 ? "atencao" : "dica",
+      titulo: "Este mês não sobrou nada guardado",
+      texto:
+        sobrou > 0
+          ? `Sobraram ${formatBRL(sobrou)} e nada foi separado. Dinheiro que fica na conta corrente costuma virar gasto sem querer. Guardar primeiro e gastar o resto funciona melhor que o contrário.`
+          : "Nada foi guardado este mês. Mesmo um valor pequeno e fixo, separado no dia que o salário cai, faz mais diferença que um valor grande de vez em quando.",
+      sugestao: sobrou > 0 ? `guarda ${formatBRL(sobrou)} na minha reserva` : "quanto eu consigo guardar por mês?",
+    });
+  } else if (renda > 0 && guardar.percent >= 20) {
+    out.push({
+      id: "guardou-bem",
+      nivel: "parabens",
+      titulo: "Mês bom: vocês guardaram de verdade",
+      texto: `${formatBRL(guardar.total)} foram para o futuro — ${guardar.percent}% de tudo que entrou. Guardar 20% é a marca que quase ninguém bate.`,
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // 8. Nenhum sonho cadastrado
+  // -------------------------------------------------------------------
+  const sonhos = metas.filter((m) => m.kind === "sonho");
+  if (sonhos.length === 0) {
+    out.push({
+      id: "sem-sonho",
+      nivel: "dica",
+      titulo: "Deem nome ao sonho de vocês",
+      texto: "Guardar dinheiro sem motivo é chato e a gente desiste. Guardar para a viagem, a entrada do apê ou a festa é outra história. Me conta o que vocês querem e até quando, que eu calculo quanto separar por mês.",
+      sugestao: "quero juntar para uma viagem",
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // 9. Sonho parado / sonho conquistado
+  // -------------------------------------------------------------------
+  for (const meta of sonhos) {
+    if (meta.percent >= 100) {
+      out.push({
+        id: `sonho-feito-${meta.id}`,
+        nivel: "parabens",
+        titulo: `${meta.name}: conquistado!`,
+        texto: `Vocês juntaram os ${formatBRL(meta.target_amount)}. Esse era o plano e vocês cumpriram.`,
+      });
+    } else if (meta.monthly_needed && meta.monthly_needed > 0) {
+      const guardadoNaMeta = agora.saved_in_goals;
+      if (guardadoNaMeta < meta.monthly_needed && fracao > 0.7) {
+        out.push({
+          id: `sonho-atrasado-${meta.id}`,
+          nivel: "atencao",
+          titulo: `${meta.name} está atrasando`,
+          texto: `Para chegar na data combinada, vocês precisam separar ${formatBRL(meta.monthly_needed)} por mês. Este mês foram ${formatBRL(guardadoNaMeta)}. Ou vocês aumentam o valor, ou a data anda para frente — as duas respostas valem, contanto que seja escolha.`,
+          sugestao: `quanto preciso guardar por mês para ${meta.name}?`,
+        });
+      }
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // 10. Orçamento estourado
+  // -------------------------------------------------------------------
+  const estourados = orcamento.budgets.filter((b) => b.percent_used >= 100);
+  const quaseLa = orcamento.budgets.filter((b) => b.percent_used >= 80 && b.percent_used < 100);
+
+  if (estourados.length > 0) {
+    const nomes = estourados.map((b) => b.category).join(", ");
+    out.push({
+      id: "orcamento-estourado",
+      nivel: "atencao",
+      titulo: estourados.length === 1 ? `${nomes} estourou` : "Alguns limites estouraram",
+      texto: `Vocês passaram do limite que combinaram em ${nomes}. Não é o fim do mundo — mas se estourar todo mês, o limite está errado, não o gasto.`,
+      sugestao: `revisa meu limite de ${estourados[0].category}`,
+    });
+  } else if (quaseLa.length > 0) {
+    const nomes = quaseLa.map((b) => b.category).join(", ");
+    out.push({
+      id: "orcamento-perto",
+      nivel: "dica",
+      titulo: "Chegando no limite",
+      texto: `${nomes} já passou de 80% do combinado para o mês. Ainda dá para segurar.`,
+    });
+  }
+
+  return out.sort((a, b) => ORDEM[a.nivel] - ORDEM[b.nivel]);
+}

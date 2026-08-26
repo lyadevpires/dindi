@@ -14,7 +14,17 @@ import {
   resolveCategory,
   resolvePerson,
 } from "./resolve";
-import { DindiError, type Account, type Ctx, type Invoice, type TxType } from "./types";
+import {
+  BUCKETS,
+  BUCKET_HINT,
+  BUCKET_LABEL,
+  DindiError,
+  type Account,
+  type Bucket,
+  type Ctx,
+  type Invoice,
+  type TxType,
+} from "./types";
 
 // =====================================================================
 // Transações
@@ -397,14 +407,16 @@ export async function listAccounts(ctx: Ctx) {
 
 export async function createCategory(
   ctx: Ctx,
-  input: { name: string; kind?: "expense" | "income" | "both"; emoji?: string }
+  input: { name: string; kind?: "expense" | "income" | "both"; bucket?: Bucket; emoji?: string }
 ) {
+  const kind = input.kind ?? "expense";
   const { data, error } = await ctx.db
     .from("categories")
     .insert({
       household_id: ctx.householdId,
       name: input.name.trim(),
-      kind: input.kind ?? "expense",
+      kind,
+      bucket: input.bucket ?? (kind === "income" ? "receita" : "dia_a_dia"),
       emoji: input.emoji ?? null,
     })
     .select("*")
@@ -415,7 +427,108 @@ export async function createCategory(
 
 export async function listCategories(ctx: Ctx) {
   const cats = await allCategories(ctx);
-  return cats.map((c) => ({ id: c.id, name: c.name, kind: c.kind, emoji: c.emoji }));
+  return cats.map((c) => ({
+    id: c.id,
+    name: c.name,
+    kind: c.kind,
+    bucket: c.bucket,
+    grupo: BUCKET_LABEL[c.bucket],
+    emoji: c.emoji,
+  }));
+}
+
+export async function moveCategory(ctx: Ctx, input: { category: string; bucket: Bucket }) {
+  const cat = (await resolveCategory(ctx, input.category))!;
+  const { error } = await ctx.db
+    .from("categories")
+    .update({ bucket: input.bucket })
+    .eq("id", cat.id)
+    .eq("household_id", ctx.householdId);
+  if (error) throw new DindiError(error.message);
+  return { category: cat.name, grupo: BUCKET_LABEL[input.bucket] };
+}
+
+/**
+ * O mês dividido nos quatro baldes. É a base de quase todo conselho:
+ * dá para ver na hora se a casa está apertada por obrigação ou por escolha.
+ */
+export async function getSpendingByBucket(ctx: Ctx, month?: string) {
+  const referenceMonth = monthStart(month ?? today());
+  const end = addMonths(referenceMonth, 1);
+
+  const categories = await allCategories(ctx);
+  const cat = new Map(categories.map((c) => [c.id, c]));
+
+  const { data: txs, error } = await ctx.db
+    .from("transactions")
+    .select("amount, type, category_id")
+    .eq("household_id", ctx.householdId)
+    .gte("date", referenceMonth)
+    .lt("date", end);
+  if (error) throw new DindiError(error.message);
+
+  let income = 0;
+  const totals: Record<Bucket, number> = {
+    fixo: 0,
+    dia_a_dia: 0,
+    lazer: 0,
+    guardar: 0,
+    receita: 0,
+  };
+  const porCategoria: Record<Bucket, Record<string, number>> = {
+    fixo: {},
+    dia_a_dia: {},
+    lazer: {},
+    guardar: {},
+    receita: {},
+  };
+
+  for (const t of txs ?? []) {
+    const valor = num(t.amount);
+    if (t.type === "income") {
+      income = round2(income + valor);
+      continue;
+    }
+    const c = t.category_id ? cat.get(t.category_id) : undefined;
+    // Gasto sem categoria conta como dia a dia — é o balde mais neutro.
+    const b: Bucket = c && c.bucket !== "receita" ? c.bucket : "dia_a_dia";
+    totals[b] = round2(totals[b] + valor);
+    const nome = c?.name ?? "Sem categoria";
+    porCategoria[b][nome] = round2((porCategoria[b][nome] ?? 0) + valor);
+  }
+
+  // O que foi para metas também é dinheiro guardado, mesmo sem virar transação.
+  const { data: aportes } = await ctx.db
+    .from("goal_contributions")
+    .select("amount")
+    .eq("household_id", ctx.householdId)
+    .gte("date", referenceMonth)
+    .lt("date", end);
+  const guardadoEmMetas = round2((aportes ?? []).reduce((s, a) => s + num(a.amount), 0));
+  totals.guardar = round2(totals.guardar + guardadoEmMetas);
+
+  const gasto = round2(totals.fixo + totals.dia_a_dia + totals.lazer);
+  const base = income > 0 ? income : gasto + totals.guardar;
+
+  return {
+    month: referenceMonth,
+    income,
+    total_spent: gasto,
+    saved: totals.guardar,
+    left: round2(income - gasto - totals.guardar),
+    groups: BUCKETS.map((b) => ({
+      bucket: b,
+      label: BUCKET_LABEL[b],
+      hint: BUCKET_HINT[b],
+      total: totals[b],
+      // Fatia da renda do mês. Sem renda registrada, fatia do que se movimentou.
+      percent: base > 0 ? Math.round((totals[b] / base) * 100) : 0,
+      categories: Object.entries(porCategoria[b])
+        .sort((a, z) => z[1] - a[1])
+        .map(([name, total]) => ({ name, total })),
+    })),
+    saved_in_goals: guardadoEmMetas,
+  };
 }
 
 // =====================================================================
@@ -814,20 +927,59 @@ export async function getBudgetStatus(ctx: Ctx, month?: string) {
 
 export async function createGoal(
   ctx: Ctx,
-  input: { name: string; target_amount: number; target_date?: string }
+  input: {
+    name: string;
+    target_amount: number;
+    target_date?: string;
+    kind?: "emergencia" | "sonho";
+  }
 ) {
   const { data, error } = await ctx.db
     .from("goals")
     .insert({
       household_id: ctx.householdId,
       name: input.name.trim(),
+      kind: input.kind ?? "sonho",
       target_amount: round2(input.target_amount),
       target_date: input.target_date ?? null,
     })
     .select("*")
     .single();
-  if (error) throw new DindiError(error.message);
+  if (error) {
+    // O índice único impede duas reservas de emergência na mesma casa.
+    if (error.message.includes("idx_goals_uma_emergencia")) {
+      throw new DindiError("Vocês já têm uma reserva de emergência. Dá para aumentar a dela.");
+    }
+    throw new DindiError(error.message);
+  }
   return { ...data, target_amount: num(data.target_amount), current_amount: 0 };
+}
+
+/**
+ * Quanto a reserva de emergência DEVERIA ter: seis meses do que a casa
+ * gasta para existir (contas fixas + dia a dia), sem contar lazer.
+ */
+export async function suggestEmergencyFund(ctx: Ctx) {
+  const meses = [0, -1, -2].map((n) => addMonths(monthStart(today()), n));
+  const resumos = await Promise.all(meses.map((m) => getSpendingByBucket(ctx, m)));
+
+  const custoMensal = resumos
+    .map((r) => {
+      const fixo = r.groups.find((g) => g.bucket === "fixo")!.total;
+      const dia = r.groups.find((g) => g.bucket === "dia_a_dia")!.total;
+      return round2(fixo + dia);
+    })
+    .filter((v) => v > 0);
+
+  if (custoMensal.length === 0) return null;
+
+  const media = round2(custoMensal.reduce((s, v) => s + v, 0) / custoMensal.length);
+  return {
+    monthly_cost: media,
+    ideal: round2(media * 6),
+    minimum: round2(media * 3),
+    months_of_data: custoMensal.length,
+  };
 }
 
 async function resolveGoal(ctx: Ctx, query: string) {
@@ -895,6 +1047,8 @@ export async function getGoalProgress(ctx: Ctx, goalQuery?: string) {
     .select("*")
     .eq("household_id", ctx.householdId)
     .eq("archived", false)
+    // 'emergencia' vem antes de 'sonho' no alfabeto — a reserva aparece primeiro.
+    .order("kind")
     .order("created_at");
   if (error) throw new DindiError(error.message);
 
@@ -922,6 +1076,7 @@ export async function getGoalProgress(ctx: Ctx, goalQuery?: string) {
     return {
       id: g.id,
       name: g.name,
+      kind: (g.kind ?? "sonho") as "emergencia" | "sonho",
       target_amount: target,
       current_amount: current,
       percent: target > 0 ? Math.round((current / target) * 100) : 0,

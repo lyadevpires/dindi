@@ -10,6 +10,30 @@ export type Ctx = {
 export type AccountType = "checking" | "savings" | "credit_card";
 export type TxType = "expense" | "income";
 
+/**
+ * O "balde" onde o gasto cai. É o que permite dizer se a casa está
+ * apertada por obrigação (fixo) ou por escolha (lazer).
+ */
+export type Bucket = "fixo" | "dia_a_dia" | "lazer" | "guardar" | "receita";
+
+export const BUCKETS = ["fixo", "dia_a_dia", "lazer", "guardar"] as const;
+
+export const BUCKET_LABEL: Record<Bucket, string> = {
+  fixo: "Contas fixas",
+  dia_a_dia: "Dia a dia",
+  lazer: "Lazer",
+  guardar: "Guardar",
+  receita: "Entrou",
+};
+
+export const BUCKET_HINT: Record<Bucket, string> = {
+  fixo: "chega todo mês e você não escolhe",
+  dia_a_dia: "o básico de viver",
+  lazer: "o que é escolha sua",
+  guardar: "vira reserva ou sonho",
+  receita: "o que entrou na casa",
+};
+
 export type Account = {
   id: string;
   household_id: string;
@@ -27,6 +51,7 @@ export type Category = {
   household_id: string;
   name: string;
   kind: "expense" | "income" | "both";
+  bucket: Bucket;
   emoji: string | null;
   archived: boolean;
 };
@@ -59,6 +84,7 @@ export type Member = {
 export type Goal = {
   id: string;
   name: string;
+  kind: "emergencia" | "sonho";
   target_amount: number | string;
   target_date: string | null;
   current_amount: number | string;

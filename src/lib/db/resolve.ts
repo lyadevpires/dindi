@@ -1,4 +1,11 @@
-import { DindiError, type Account, type Category, type Ctx, type Member } from "./types";
+import {
+  DindiError,
+  type Account,
+  type Bucket,
+  type Category,
+  type Ctx,
+  type Member,
+} from "./types";
 
 /**
  * O Claude fala em nomes ("cartão nubank", "mercado", "a Maria"),
@@ -102,7 +109,7 @@ export async function resolveAccount(
 export async function resolveCategory(
   ctx: Ctx,
   query: string | undefined | null,
-  opts: { createIfMissing?: boolean; kind?: "expense" | "income" } = {}
+  opts: { createIfMissing?: boolean; kind?: "expense" | "income"; bucket?: Bucket } = {}
 ): Promise<Category | null> {
   if (!query) return null;
 
@@ -117,12 +124,14 @@ export async function resolveCategory(
   if (found) return found;
 
   if (opts.createIfMissing) {
+    const kind = opts.kind ?? "expense";
     const { data, error } = await ctx.db
       .from("categories")
       .insert({
         household_id: ctx.householdId,
         name: query.trim(),
-        kind: opts.kind ?? "expense",
+        kind,
+        bucket: opts.bucket ?? (kind === "income" ? "receita" : "dia_a_dia"),
       })
       .select("*")
       .single();

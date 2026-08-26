@@ -8,6 +8,7 @@ import { listAccounts, listCategories, listRecurringRules } from "@/lib/db/finan
 import { formatBRL } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
 import { allMembers } from "@/lib/db/resolve";
+import { BUCKET_HINT, BUCKET_LABEL } from "@/lib/db/types";
 
 export const dynamic = "force-dynamic";
 
@@ -205,16 +206,31 @@ export default async function Casa() {
       {/* ---------------- Categorias ---------------- */}
       <section>
         <SectionTitle>Categorias</SectionTitle>
-        <div className="flex flex-wrap gap-2">
-          {categorias.map((c) => (
-            <Pill key={c.id}>
-              {c.emoji ? `${c.emoji} ` : ""}
-              {c.name}
-            </Pill>
-          ))}
+        <div className="space-y-4">
+          {(["fixo", "dia_a_dia", "lazer", "guardar", "receita"] as const).map((b) => {
+            const doGrupo = categorias.filter((c) => c.bucket === b);
+            if (doGrupo.length === 0) return null;
+            return (
+              <div key={b}>
+                <p className="mb-2 text-sm font-medium">
+                  {BUCKET_LABEL[b]}{" "}
+                  <span className="font-normal text-suave">— {BUCKET_HINT[b]}</span>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {doGrupo.map((c) => (
+                    <Pill key={c.id}>
+                      {c.emoji ? `${c.emoji} ` : ""}
+                      {c.name}
+                    </Pill>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
-        <p className="mt-3 text-sm text-suave">
-          O Claude cria categoria nova sozinho quando você fala de algo diferente.
+        <p className="mt-4 text-sm text-suave">
+          O Claude cria categoria nova sozinho quando você fala de algo diferente. Se alguma
+          estiver no grupo errado, é só falar: <em>&ldquo;academia é conta fixa pra mim&rdquo;</em>.
         </p>
       </section>
     </Shell>

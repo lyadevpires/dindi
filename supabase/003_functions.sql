@@ -11,25 +11,32 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into categories (household_id, name, kind, emoji) values
-    (hid, 'Mercado',        'expense', '🛒'),
-    (hid, 'Restaurante',    'expense', '🍽️'),
-    (hid, 'Transporte',     'expense', '🚗'),
-    (hid, 'Moradia',        'expense', '🏠'),
-    (hid, 'Contas de casa', 'expense', '💡'),
-    (hid, 'Saúde',          'expense', '💊'),
-    (hid, 'Educação',       'expense', '📚'),
-    (hid, 'Lazer',          'expense', '🎬'),
-    (hid, 'Compras',        'expense', '🛍️'),
-    (hid, 'Assinaturas',    'expense', '📺'),
-    (hid, 'Pets',           'expense', '🐶'),
-    (hid, 'Presentes',      'expense', '🎁'),
-    (hid, 'Viagem',         'expense', '✈️'),
-    (hid, 'Outros',         'expense', '📦'),
-    (hid, 'Salário',        'income',  '💼'),
-    (hid, 'Freela',         'income',  '💻'),
-    (hid, 'Rendimentos',    'income',  '📈'),
-    (hid, 'Outras receitas','income',  '➕')
+  insert into categories (household_id, name, kind, bucket, emoji) values
+    -- chega todo mês, não dá para escolher
+    (hid, 'Moradia',        'expense', 'fixo',      '🏠'),
+    (hid, 'Contas de casa', 'expense', 'fixo',      '💡'),
+    (hid, 'Assinaturas',    'expense', 'fixo',      '📺'),
+    (hid, 'Educação',       'expense', 'fixo',      '📚'),
+    -- o básico de viver
+    (hid, 'Mercado',        'expense', 'dia_a_dia', '🛒'),
+    (hid, 'Transporte',     'expense', 'dia_a_dia', '🚗'),
+    (hid, 'Saúde',          'expense', 'dia_a_dia', '💊'),
+    (hid, 'Pets',           'expense', 'dia_a_dia', '🐶'),
+    (hid, 'Outros',         'expense', 'dia_a_dia', '📦'),
+    -- o que é escolha
+    (hid, 'Restaurante',    'expense', 'lazer',     '🍽️'),
+    (hid, 'Lazer',          'expense', 'lazer',     '🎬'),
+    (hid, 'Compras',        'expense', 'lazer',     '🛍️'),
+    (hid, 'Presentes',      'expense', 'lazer',     '🎁'),
+    (hid, 'Viagem',         'expense', 'lazer',     '✈️'),
+    -- o que sai da conta para virar reserva
+    (hid, 'Reserva',        'expense', 'guardar',   '🐷'),
+    (hid, 'Investimentos',  'expense', 'guardar',   '🌱'),
+    -- o que entra
+    (hid, 'Salário',        'income',  'receita',   '💼'),
+    (hid, 'Freela',         'income',  'receita',   '💻'),
+    (hid, 'Rendimentos',    'income',  'receita',   '📈'),
+    (hid, 'Outras receitas','income',  'receita',   '➕')
   on conflict (household_id, name) do nothing;
 end $$;
 

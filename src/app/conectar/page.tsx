@@ -43,7 +43,7 @@ export default async function Conectar() {
   return (
     <Shell session={session} active="/conectar">
       <div className="mb-6 flex items-start gap-4">
-        <Dindi size={56} mood="atento" />
+        <Dindi size={56} humor="atento" />
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Conectar o Claude</h1>
           <p className="mt-1 text-sm text-suave">

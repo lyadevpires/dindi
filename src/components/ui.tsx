@@ -71,13 +71,14 @@ export function Progress({
   tone = "verde",
 }: {
   percent: number;
-  tone?: "verde" | "vermelho" | "amarelo" | "roxo";
+  tone?: "verde" | "vermelho" | "amarelo" | "roxo" | "azul";
 }) {
   const cores = {
     verde: "bg-verdinho",
     vermelho: "bg-vermelhinho",
     amarelo: "bg-amarelinho",
     roxo: "bg-roxinho",
+    azul: "bg-azulzinho",
   } as const;
 
   return (

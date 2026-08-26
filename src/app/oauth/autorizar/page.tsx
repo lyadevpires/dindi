@@ -15,7 +15,7 @@ function first(v: string | string[] | undefined): string {
 function Aviso({ titulo, texto }: { titulo: string; texto: string }) {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-5 py-16 text-center">
-      <Dindi size={56} mood="atento" />
+      <Dindi size={56} humor="atento" />
       <h1 className="mt-4 text-xl font-bold">{titulo}</h1>
       <p className="mt-2 text-sm text-suave">{texto}</p>
     </main>
@@ -118,7 +118,7 @@ export default async function AutorizarPage(props: PageProps<"/oauth/autorizar">
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-5 py-16">
       <div className="rounded-2xl border border-borda bg-white p-6">
         <div className="flex flex-col items-center text-center">
-          <Dindi size={56} mood="atento" />
+          <Dindi size={56} humor="atento" />
           <h1 className="mt-4 text-xl font-bold tracking-tight">
             Conectar {client.client_name || "o Claude"} ao dindi?
           </h1>

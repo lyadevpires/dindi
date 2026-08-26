@@ -2,8 +2,17 @@ import Link from "next/link";
 import { Shell } from "@/components/shell";
 import { Dindi } from "@/components/dindi";
 import { Card, Empty, Pill, Progress, SectionTitle } from "@/components/ui";
+import { Conselhos } from "@/components/conselhos";
+import { Grupos } from "@/components/grupos";
 import { pageCtx } from "@/lib/ctx";
-import { getBalance, getBudgetStatus, getGoalProgress, listTransactions } from "@/lib/db/finance";
+import {
+  getBalance,
+  getBudgetStatus,
+  getGoalProgress,
+  getSpendingByBucket,
+  listTransactions,
+} from "@/lib/db/finance";
+import { getConselhos } from "@/lib/db/conselhos";
 import { formatBRL } from "@/lib/money";
 import { formatDateShort, monthLabel, today } from "@/lib/dates";
 
@@ -12,18 +21,51 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const { session, ctx } = await pageCtx();
 
-  const [metas, saldos, orcamento, extrato] = await Promise.all([
+  const [metas, saldos, orcamento, extrato, grupos, conselhos] = await Promise.all([
     getGoalProgress(ctx),
     getBalance(ctx),
     getBudgetStatus(ctx),
     listTransactions(ctx, { month: today(), limit: 8 }),
+    getSpendingByBucket(ctx),
+    getConselhos(ctx),
   ]);
 
   const semNada = saldos.accounts.length === 0 && extrato.count === 0 && metas.length === 0;
+  const reserva = metas.find((m) => m.kind === "emergencia");
+  const sonhos = metas.filter((m) => m.kind === "sonho");
 
   return (
     <Shell session={session} active="/">
       {semNada ? <PrimeiroDia nome={session.displayName} /> : null}
+
+      {/* ---------------- O que o dindi tem a dizer ---------------- */}
+      {semNada ? null : <Conselhos itens={conselhos} />}
+
+      {/* ---------------- Reserva de emergência ---------------- */}
+      {reserva ? (
+        <section className="mb-8">
+          <SectionTitle>Nosso colchão</SectionTitle>
+          <Card>
+            <div className="mb-2 flex items-baseline justify-between gap-2">
+              <h3 className="font-semibold">{reserva.name}</h3>
+              <span className="tabular text-sm text-suave">{reserva.percent}%</span>
+            </div>
+            <Progress percent={reserva.percent} tone={reserva.percent >= 100 ? "verde" : "azul"} />
+            <p className="mt-2 text-sm text-suave">
+              <span className="tabular font-medium text-tinta">
+                {formatBRL(reserva.current_amount)}
+              </span>{" "}
+              de <span className="tabular">{formatBRL(reserva.target_amount)}</span>
+              {reserva.percent >= 100
+                ? " · vocês estão protegidos de um imprevisto"
+                : ` · faltam ${formatBRL(reserva.remaining)} para dormir tranquilo`}
+            </p>
+          </Card>
+        </section>
+      ) : null}
+
+      {/* ---------------- Os grupos do mês ---------------- */}
+      {semNada ? null : <Grupos grupos={grupos.groups} temRenda={grupos.income > 0} />}
 
       {/* ---------------- Metas ---------------- */}
       <section className="mb-8">
@@ -37,14 +79,14 @@ export default async function Home() {
           Nossos sonhos
         </SectionTitle>
 
-        {metas.length === 0 ? (
+        {sonhos.length === 0 ? (
           <Empty>
-            Ainda não tem nenhuma meta. Peça pro Claude: <em>&ldquo;cria uma meta de
-            reserva de emergência de 10 mil&rdquo;</em>.
+            Ainda não tem nenhum sonho com nome. Peça pro Claude:{" "}
+            <em>&ldquo;quero juntar 12 mil até dezembro para uma viagem&rdquo;</em>.
           </Empty>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {metas.slice(0, 4).map((m) => (
+            {sonhos.slice(0, 4).map((m) => (
               <Card key={m.id}>
                 <div className="mb-2 flex items-baseline justify-between gap-2">
                   <h3 className="font-semibold">{m.name}</h3>
@@ -218,7 +260,7 @@ function PrimeiroDia({ nome }: { nome: string }) {
   return (
     <Card className="mb-8 bg-areia/50">
       <div className="flex items-start gap-4">
-        <Dindi size={52} mood="feliz" />
+        <Dindi size={52} humor="feliz" />
         <div>
           <h1 className="text-xl font-bold tracking-tight">Oi, {nome}!</h1>
           <p className="mt-1 text-sm text-suave">

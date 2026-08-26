@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/server";
 import { today } from "@/lib/dates";
 import * as fin from "@/lib/db/finance";
+import { getConselhos } from "@/lib/db/conselhos";
 import { allMembers, allAccounts, allCategories } from "@/lib/db/resolve";
 import { DindiError, type Ctx } from "@/lib/db/types";
 
@@ -40,6 +41,12 @@ const monthSchema = z
   .regex(/^\d{4}-\d{2}(-\d{2})?$/, "use AAAA-MM")
   .describe("Mês no formato AAAA-MM. Se não informar, uso o mês atual.");
 
+const bucketSchema = z
+  .enum(["fixo", "dia_a_dia", "lazer", "guardar", "receita"])
+  .describe(
+    "Grupo do gasto. fixo = chega todo mês e não dá para escolher (aluguel, luz, escola, assinatura). dia_a_dia = o básico de viver (mercado, transporte, saúde, pet). lazer = o que é escolha (restaurante, viagem, compra, presente). guardar = vira reserva ou sonho. receita = o que entra."
+  );
+
 /** Registra todas as ferramentas do dindi no servidor MCP. */
 export function registerDindiTools(server: McpServer, ctx: Ctx) {
   // -------------------------------------------------------------------
@@ -73,7 +80,15 @@ export function registerDindiTools(server: McpServer, ctx: Ctx) {
               ? { fecha_dia: a.closing_day, vence_dia: a.due_day }
               : {}),
           })),
-        categorias: categories.filter((c) => !c.archived).map((c) => c.name),
+        categorias: categories
+          .filter((c) => !c.archived)
+          .map((c) => ({ nome: c.name, grupo: c.bucket })),
+        grupos_de_gasto: {
+          fixo: "chega todo mês e não dá para escolher (aluguel, luz, escola, assinatura)",
+          dia_a_dia: "o básico de viver (mercado, transporte, saúde, pet)",
+          lazer: "o que é escolha (restaurante, viagem, compra, presente)",
+          guardar: "o que sai da conta para virar reserva ou sonho",
+        },
       };
     })
   );
@@ -252,6 +267,7 @@ export function registerDindiTools(server: McpServer, ctx: Ctx) {
       inputSchema: z.object({
         name: z.string().min(1),
         kind: z.enum(["expense", "income", "both"]).default("expense"),
+        bucket: bucketSchema.optional(),
         emoji: z.string().optional(),
       }),
     },
@@ -262,10 +278,35 @@ export function registerDindiTools(server: McpServer, ctx: Ctx) {
     "list_categories",
     {
       title: "Ver categorias",
-      description: "Lista as categorias cadastradas na casa.",
+      description: "Lista as categorias da casa e em qual grupo cada uma está.",
       inputSchema: z.object({}),
     },
     safe(() => fin.listCategories(ctx))
+  );
+
+  server.registerTool(
+    "move_category",
+    {
+      title: "Mudar categoria de grupo",
+      description:
+        "Move uma categoria para outro grupo. Use quando a pessoa discordar da separação — ex: para ela, 'Academia' é conta fixa, não lazer.",
+      inputSchema: z.object({
+        category: z.string(),
+        bucket: bucketSchema,
+      }),
+    },
+    safe((args) => fin.moveCategory(ctx, args))
+  );
+
+  server.registerTool(
+    "get_spending_by_group",
+    {
+      title: "Ver o mês dividido em grupos",
+      description:
+        "Mostra o mês separado em contas fixas, dia a dia, lazer e guardar — com o valor, a fatia da renda e as categorias de cada grupo. Use isto para responder 'como foi meu mês', porque separa o que é obrigação do que é escolha.",
+      inputSchema: z.object({ month: monthSchema.optional() }),
+    },
+    safe((args) => fin.getSpendingByBucket(ctx, args.month))
   );
 
   // -------------------------------------------------------------------
@@ -400,14 +441,30 @@ export function registerDindiTools(server: McpServer, ctx: Ctx) {
     "create_goal",
     {
       title: "Criar meta de economia",
-      description: "Cria uma meta, tipo reserva de emergência ou viagem.",
+      description:
+        "Cria uma meta. Use kind='emergencia' para a reserva que protege a casa de imprevisto (só pode existir uma) e kind='sonho' para viagem, entrada do apê, festa. Se a casa ainda não tem reserva de emergência, sugira criar essa primeiro.",
       inputSchema: z.object({
         name: z.string().min(1),
         target_amount: z.number().positive().describe("Quanto quer juntar."),
         target_date: dateSchema.optional().describe("Para quando."),
+        kind: z
+          .enum(["emergencia", "sonho"])
+          .default("sonho")
+          .describe("'emergencia' = o colchão de segurança. 'sonho' = tudo que a casa quer."),
       }),
     },
     safe((args) => fin.createGoal(ctx, args))
+  );
+
+  server.registerTool(
+    "suggest_emergency_fund",
+    {
+      title: "Calcular o tamanho da reserva de emergência",
+      description:
+        "Calcula quanto a reserva de emergência da casa deveria ter, olhando o que eles realmente gastam para viver (contas fixas + dia a dia) nos últimos meses. Devolve o custo mensal, o mínimo (3 meses) e o ideal (6 meses). Devolve null se ainda não houver gasto registrado.",
+      inputSchema: z.object({}),
+    },
+    safe(() => fin.suggestEmergencyFund(ctx))
   );
 
   server.registerTool(
@@ -462,6 +519,17 @@ export function registerDindiTools(server: McpServer, ctx: Ctx) {
     },
     safe((args) => fin.getFinancialSummary(ctx, args))
   );
+
+  server.registerTool(
+    "get_alerts",
+    {
+      title: "Ver os alertas e conselhos do mês",
+      description:
+        "Devolve o que está fora do lugar nas finanças da casa e o que fazer a respeito: mês no vermelho, ritmo de gasto que não fecha, contas fixas pesadas, lazer acima do saudável, fatura maior que o saldo, falta de reserva de emergência, sonho atrasado e limite estourado. Cada item vem com nível (urgente, atencao, dica, parabens), um título e o texto pronto em português de gente. CHAME ISTO sempre que a pessoa perguntar como estão as finanças, e depois de registrar um gasto grande. Fale os alertas com as suas palavras, sem despejar a lista inteira: comece pelos urgentes, no máximo dois ou três por vez.",
+      inputSchema: z.object({ month: monthSchema.optional() }),
+    },
+    safe((args) => getConselhos(ctx, args.month))
+  );
 }
 
 /** Instruções que o Claude recebe ao conectar. Define o jeitão do dindi. */
@@ -485,7 +553,10 @@ Como se comportar:
 
 4. Categoria: infira pelo contexto e diga qual escolheu ao confirmar
    ("anotei em Mercado"). Se a pessoa corrigir, use edit_transaction.
-   Prefira categorias que já existem a criar novas.
+   Prefira categorias que já existem a criar novas. Ao criar uma categoria
+   nova, escolha o grupo dela (fixo, dia_a_dia, lazer ou guardar) — é isso
+   que permite separar obrigação de escolha depois. Se a pessoa discordar
+   da separação, use move_category; a régua é a dela, não a sua.
 
 5. Valores: a pessoa fala "80", "80 pila", "oitenta reais" — tudo é 80.
    "1,5k" ou "mil e quinhentos" é 1500.
@@ -502,4 +573,40 @@ Como se comportar:
 
 9. Se a pessoa parecer preocupada com dinheiro, seja gentil. Isso aqui é
    assunto sensível de casal, não é auditoria.
+
+10. VOCÊ NÃO É SÓ UM CADERNO. O dindi existe para essas pessoas viverem
+    melhor com o dinheiro delas, não para guardar números bonitinhos.
+    Chame get_alerts quando a pessoa perguntar como estão as coisas, e
+    também depois de registrar um gasto que pareça grande para o padrão
+    dela. Se vier algo urgente, fale — mesmo que ela não tenha perguntado.
+
+11. Ao dar um alerta, siga estas regras:
+    - No máximo dois por vez. Despejar cinco problemas de uma vez paralisa.
+    - Use suas palavras, não cole o texto pronto. Ele é matéria-prima.
+    - Sempre com o número concreto ("são 400 a mais que no mês passado"),
+      nunca vago ("você tem gastado bastante").
+    - Termine com um próximo passo pequeno e possível, não com sermão.
+    - Nunca julgue a pessoa. "O lazer subiu" — não "você gastou demais".
+      Não existe gasto burro; existe gasto que ela não sabia que estava
+      fazendo. Seu trabalho é fazer ela saber.
+
+12. Guardar dinheiro é o assunto mais importante aqui, e a ordem é esta:
+    a) Primeiro a RESERVA DE EMERGÊNCIA — o dinheiro parado que impede
+       que um imprevisto vire dívida no cartão. Use suggest_emergency_fund
+       para calcular o tamanho certo a partir do que a casa realmente
+       gasta para existir. O mínimo é 3 meses, o ideal é 6.
+    b) Depois as dívidas caras (rotativo do cartão, cheque especial).
+    c) Só então os SONHOS: viagem, entrada do apê, festa, carro.
+    Se a casa não tem reserva, é isso que você puxa — com carinho, uma vez,
+    sem repetir toda conversa.
+
+13. Sonho precisa de nome e de data. "Quero guardar dinheiro" não gruda;
+    "quero 12 mil até dezembro para a viagem do Chile" gruda. Sempre que
+    a pessoa falar de um sonho, transforme em meta com valor e prazo, e
+    diga quanto isso dá por mês. Se o valor por mês for impossível para a
+    realidade dela, diga na hora e proponha esticar o prazo — melhor um
+    plano lento que ela cumpre do que um plano bonito que ela abandona.
+
+14. Comemore. Quando a reserva fecha, quando o mês sobrou, quando um sonho
+    é conquistado — isso é o que faz a pessoa continuar. Não deixe passar.
 `.trim();

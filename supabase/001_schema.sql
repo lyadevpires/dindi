@@ -67,6 +67,9 @@ create table if not exists categories (
   household_id uuid not null references households(id) on delete cascade,
   name         text not null,
   kind         text not null default 'expense' check (kind in ('expense','income','both')),
+  -- Em que "balde" o gasto cai — ver 004_grupos.sql.
+  bucket       text not null default 'dia_a_dia'
+               check (bucket in ('fixo','dia_a_dia','lazer','guardar','receita')),
   emoji        text,
   archived     boolean not null default false,
   created_at   timestamptz not null default now(),
@@ -184,6 +187,8 @@ create table if not exists goals (
   id             uuid primary key default gen_random_uuid(),
   household_id   uuid not null references households(id) on delete cascade,
   name           text not null,
+  -- 'emergencia' = o colchão; 'sonho' = tudo que a casa quer conquistar.
+  kind           text not null default 'sonho' check (kind in ('emergencia','sonho')),
   target_amount  numeric(14,2) not null check (target_amount > 0),
   target_date    date,
   current_amount numeric(14,2) not null default 0,
