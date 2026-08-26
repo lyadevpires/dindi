@@ -27,8 +27,13 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  // Só de chamar isso o token é renovado quando necessário.
-  await supabase.auth.getUser();
+  // Renova o token quando ele está vencendo — e só nessa hora.
+  //
+  // Aqui era `getUser()`, que conversa com o servidor do Supabase a cada clique
+  // e segurava a troca de tela. `getSession()` lê o cookie na hora e só sai para
+  // a rede se o token já venceu. Não é uma brecha: quem decide se você está
+  // logado de verdade continua sendo o `getUser()` de dentro de cada página.
+  await supabase.auth.getSession();
 
   return response;
 }
