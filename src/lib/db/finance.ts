@@ -450,7 +450,7 @@ export async function moveCategory(ctx: Ctx, input: { category: string; bucket: 
 
 /**
  * O mês dividido nos quatro baldes. É a base de quase todo conselho:
- * dá para ver na hora se a casa está apertada por obrigação ou por escolha.
+ * dá para ver na hora se o mês está apertado por obrigação ou por escolha.
  */
 export async function getSpendingByBucket(ctx: Ctx, month?: string) {
   const referenceMonth = monthStart(month ?? today());
@@ -946,9 +946,9 @@ export async function createGoal(
     .select("*")
     .single();
   if (error) {
-    // O índice único impede duas reservas de emergência na mesma casa.
+    // O índice único impede duas reservas de emergência no mesmo dindi.
     if (error.message.includes("idx_goals_uma_emergencia")) {
-      throw new DindiError("Esta casa já tem uma reserva de emergência. Dá para aumentar a dela.");
+      throw new DindiError("Você já tem uma reserva de emergência. Dá para aumentar a dela.");
     }
     throw new DindiError(error.message);
   }
@@ -956,7 +956,7 @@ export async function createGoal(
 }
 
 /**
- * Quanto a reserva de emergência DEVERIA ter: seis meses do que a casa
+ * Quanto a reserva de emergência DEVERIA ter: seis meses do que se
  * gasta para existir (contas fixas + dia a dia), sem contar lazer.
  */
 export async function suggestEmergencyFund(ctx: Ctx) {

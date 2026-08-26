@@ -17,9 +17,9 @@ import type { Ctx } from "./types";
  * um nível, um título curto e uma frase que explica o porquê em português
  * de gente. Nada de "sua taxa de poupança está em 4%".
  *
- * A voz é sempre com UMA pessoa ("você") e o dinheiro é sempre "da casa".
- * A casa pode ter uma pessoa só ou uma família inteira — falar "vocês" deixaria
- * de fora justamente quem usa o dindi sozinha, que é o caso mais comum.
+ * A voz é sempre com UMA pessoa ("você"). Quando precisa nomear o conjunto,
+ * é "o seu dindi" — nunca "a casa" nem "vocês", que deixariam de fora
+ * justamente quem usa sozinha, o caso mais comum.
  *
  * Níveis:
  *   urgente  → dinheiro vai faltar, precisa agir agora
@@ -106,7 +106,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
       id: "mes-no-vermelho",
       nivel: "urgente",
       titulo: "Saiu mais do que entrou",
-      texto: `Entrou ${formatBRL(renda)} e saiu ${formatBRL(round2(gasto + agora.saved))}. São ${formatBRL(buraco)} a mais do que a casa ganhou este mês. O buraco vai sair de algum lugar: da reserva ou do cartão.`,
+      texto: `Entrou ${formatBRL(renda)} e saiu ${formatBRL(round2(gasto + agora.saved))}. São ${formatBRL(buraco)} a mais do que entrou este mês. O buraco vai sair de algum lugar: da reserva ou do cartão.`,
       sugestao: "onde dá para cortar este mês?",
     });
   }
@@ -175,7 +175,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
       id: "fatura-maior-que-conta",
       nivel: "urgente",
       titulo: "A fatura está maior que o dinheiro em conta",
-      texto: `A casa deve ${formatBRL(fatura)} no cartão e tem ${formatBRL(emConta)} disponível. Se a fatura vencer hoje, não dá para pagar tudo. Pagar só o mínimo é a forma mais cara de dever dinheiro que existe.`,
+      texto: `Você deve ${formatBRL(fatura)} no cartão e tem ${formatBRL(emConta)} disponível. Se a fatura vencer hoje, não dá para pagar tudo. Pagar só o mínimo é a forma mais cara de dever dinheiro que existe.`,
       sugestao: "monta um plano para eu pagar a fatura inteira",
     });
   }
@@ -190,7 +190,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
       id: "sem-reserva",
       nivel: "dica",
       titulo: "Ainda não existe uma reserva de emergência",
-      texto: `Reserva de emergência é o dinheiro que impede que um pneu furado ou um dente quebrado vire dívida no cartão. Pelo que a casa gasta para viver (${formatBRL(reservaIdeal.monthly_cost)} por mês), o ideal é chegar em ${formatBRL(reservaIdeal.ideal)} — seis meses parados. Começar por ${formatBRL(reservaIdeal.minimum)} já resolve a maioria dos sustos.`,
+      texto: `Reserva de emergência é o dinheiro que impede que um pneu furado ou um dente quebrado vire dívida no cartão. Pelo que você gasta para viver (${formatBRL(reservaIdeal.monthly_cost)} por mês), o ideal é chegar em ${formatBRL(reservaIdeal.ideal)} — seis meses parados. Começar por ${formatBRL(reservaIdeal.minimum)} já resolve a maioria dos sustos.`,
       sugestao: `cria minha reserva de emergência de ${formatBRL(reservaIdeal.ideal)}`,
     });
   } else if (!reserva) {
@@ -206,7 +206,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
       id: "reserva-pequena",
       nivel: "dica",
       titulo: "A reserva está menor do que deveria",
-      texto: `A reserva mira ${formatBRL(reserva.target_amount)}, mas a casa custa ${formatBRL(reservaIdeal.monthly_cost)} por mês. O mínimo saudável seria ${formatBRL(reservaIdeal.minimum)} — três meses de tranquilidade.`,
+      texto: `A reserva mira ${formatBRL(reserva.target_amount)}, mas viver custa ${formatBRL(reservaIdeal.monthly_cost)} por mês. O mínimo saudável seria ${formatBRL(reservaIdeal.minimum)} — três meses de tranquilidade.`,
       sugestao: `aumenta minha reserva para ${formatBRL(reservaIdeal.minimum)}`,
     });
   } else if (reserva.percent >= 100) {
@@ -214,7 +214,7 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
       id: "reserva-completa",
       nivel: "parabens",
       titulo: "A reserva de emergência está completa",
-      texto: `${formatBRL(reserva.current_amount)} guardados. A casa está protegida de um susto — agora todo dinheiro que sobrar pode ir para os sonhos, sem culpa.`,
+      texto: `${formatBRL(reserva.current_amount)} guardados. Seu dindi está protegido de um susto — agora todo dinheiro que sobrar pode ir para os sonhos, sem culpa.`,
       sugestao: "qual sonho eu deveria priorizar agora?",
     });
   }

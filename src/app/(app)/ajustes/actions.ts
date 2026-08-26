@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase/server";
 import { requireSession } from "@/lib/auth";
 
-/** Troca o nome da casa. O RLS só deixa mexer na casa de quem mora nela. */
+/** Troca o nome do dindi. O RLS só deixa mexer no dindi de quem participa dele. */
 export async function renameHousehold(formData: FormData): Promise<void> {
   const nome = String(formData.get("household_name") ?? "").trim();
   if (!nome) return;
@@ -17,7 +17,7 @@ export async function renameHousehold(formData: FormData): Promise<void> {
 }
 
 /**
- * Desconecta um app (o Claude, normalmente) da casa.
+ * Desconecta um app (o Claude, normalmente) do dindi.
  * O RLS só deixa a pessoa revogar os próprios tokens.
  */
 export async function revokeConnection(formData: FormData): Promise<void> {
@@ -35,7 +35,7 @@ export async function revokeConnection(formData: FormData): Promise<void> {
     .eq("user_id", data.user.id)
     .eq("revoked", false);
 
-  revalidatePath("/casa");
+  revalidatePath("/ajustes");
 }
 
 /** O que o navegador devolve quando a pessoa aceita ser avisada. */
@@ -68,7 +68,7 @@ export async function ligarAvisos(inscricao: Inscricao): Promise<string | null> 
 
   if (error) return error.message;
 
-  revalidatePath("/casa");
+  revalidatePath("/ajustes");
   return null;
 }
 
@@ -80,5 +80,5 @@ export async function desligarAvisos(endpoint: string): Promise<void> {
   const supabase = await supabaseServer();
   await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
 
-  revalidatePath("/casa");
+  revalidatePath("/ajustes");
 }

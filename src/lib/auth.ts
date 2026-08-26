@@ -31,8 +31,11 @@ export const getUser = cache(async () => {
 });
 
 /**
- * Sessão completa: usuário + casa. Devolve null se não estiver logado
- * ou se ainda não tiver criado/entrado numa casa.
+ * Sessão completa: usuário + o dindi dele. Devolve null se não estiver logado
+ * ou se ainda não tiver criado/entrado em um.
+ *
+ * No banco a tabela se chama `household` por motivos históricos; para quem usa,
+ * isso é "o seu dindi" — você e quem você convidar para dividir o dinheiro.
  */
 export const getSession = cache(async (): Promise<SessionInfo | null> => {
   const user = await getUser();
@@ -53,7 +56,7 @@ export const getSession = cache(async (): Promise<SessionInfo | null> => {
     userId: user.id,
     email: user.email ?? null,
     householdId: member.household_id,
-    householdName: household?.name ?? "Nossa casa",
+    householdName: household?.name ?? "Meu dindi",
     displayName: member.display_name,
     role: member.role as "owner" | "member",
   };

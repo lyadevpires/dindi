@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 const TIPO = { checking: "conta corrente", savings: "poupança", credit_card: "cartão de crédito" };
 
-export default async function Casa() {
+export default async function Ajustes() {
   const { session, ctx } = await pageCtx();
 
   const [membros, contas, categorias, recorrencias] = await Promise.all([
@@ -49,9 +49,9 @@ export default async function Casa() {
 
   return (
     <>
-      {/* ---------------- Quem mora aqui ---------------- */}
+      {/* ---------------- Quem participa ---------------- */}
       <section className="mb-8">
-        <SectionTitle>Quem mora na {session.householdName}</SectionTitle>
+        <SectionTitle>Quem está no seu dindi</SectionTitle>
         <Card className="p-0">
           <ul className="divide-y divide-borda">
             {membros.map((m) => (
@@ -61,7 +61,7 @@ export default async function Casa() {
               >
                 <span className="font-medium">{m.display_name}</span>
                 <Pill tone={m.role === "owner" ? "roxo" : "neutro"}>
-                  {m.role === "owner" ? "criou a casa" : "mora aqui"}
+                  {m.role === "owner" ? "criou" : "participa"}
                 </Pill>
               </li>
             ))}
@@ -73,7 +73,7 @@ export default async function Casa() {
             name="household_name"
             defaultValue={session.householdName}
             maxLength={60}
-            aria-label="Nome da casa"
+            aria-label="Nome do seu dindi"
             className="min-w-0 flex-1 rounded-xl border border-borda bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-tinta"
           />
           <button
@@ -85,8 +85,8 @@ export default async function Casa() {
         </form>
 
         {/*
-          Sem limite de gente: a casa pode ser você sozinha, você e quem divide
-          as contas, ou a família inteira. Cada convite vale para uma pessoa.
+          Sem limite de gente: pode ser você sozinha, você e quem divide as
+          contas, ou a família inteira. Cada convite vale para uma pessoa.
         */}
         <div className="mt-3">
           <ConviteBotao baseUrl={appUrl()} />
@@ -98,7 +98,7 @@ export default async function Casa() {
         <SectionTitle>O recado da manhã</SectionTitle>
         <Card>
           <p className="mb-3 text-sm text-suave">
-            Toda manhã o dindi olha as contas da casa e, se tiver algo que vale a pena saber
+            Toda manhã o dindi olha as suas contas e, se tiver algo que vale a pena saber
             — fatura fechando, gasto acima do combinado, meta batida —, ele avisa neste
             aparelho. Se estiver tudo em ordem, ele fica quieto.
           </p>

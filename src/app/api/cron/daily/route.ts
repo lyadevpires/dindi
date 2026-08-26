@@ -172,12 +172,12 @@ export async function GET(request: Request) {
   // três dias, e aí some junto com ele o aviso que importava.
   const { data: inscritos } = await db.from("push_subscriptions").select("household_id, user_id");
 
-  const casas = new Map<string, string>();
+  const dindis = new Map<string, string>();
   for (const i of inscritos ?? []) {
-    if (!casas.has(i.household_id)) casas.set(i.household_id, i.user_id);
+    if (!dindis.has(i.household_id)) dindis.set(i.household_id, i.user_id);
   }
 
-  for (const [householdId, userId] of casas) {
+  for (const [householdId, userId] of dindis) {
     try {
       const conselhos = await getConselhos({ db, householdId, userId });
       const importante = conselhos.find((c) => c.nivel === "urgente" || c.nivel === "atencao");

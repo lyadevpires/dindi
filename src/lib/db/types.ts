@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-/** Contexto de toda operação: quem está mexendo e em qual casa. */
+/** Contexto de toda operação: quem está mexendo e em qual dindi. */
 export type Ctx = {
   db: SupabaseClient;
   householdId: string;
@@ -11,8 +11,8 @@ export type AccountType = "checking" | "savings" | "credit_card";
 export type TxType = "expense" | "income";
 
 /**
- * O "balde" onde o gasto cai. É o que permite dizer se a casa está
- * apertada por obrigação (fixo) ou por escolha (lazer).
+ * O "balde" onde o gasto cai. É o que permite dizer se o mês está
+ * apertado por obrigação (fixo) ou por escolha (lazer).
  */
 export type Bucket = "fixo" | "dia_a_dia" | "lazer" | "guardar" | "receita";
 
@@ -31,7 +31,7 @@ export const BUCKET_HINT: Record<Bucket, string> = {
   dia_a_dia: "o básico de viver",
   lazer: "o que é escolha sua",
   guardar: "vira reserva ou sonho",
-  receita: "o que entrou na casa",
+  receita: "o que entrou",
 };
 
 export type Account = {

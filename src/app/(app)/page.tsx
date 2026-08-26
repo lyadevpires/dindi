@@ -50,7 +50,7 @@ export default async function Home() {
               </span>{" "}
               de <span className="tabular">{formatBRL(reserva.target_amount)}</span>
               {reserva.percent >= 100
-                ? " · a casa está protegida de um imprevisto"
+                ? " · seu dindi está protegido de um imprevisto"
                 : ` · faltam ${formatBRL(reserva.remaining)} para dormir tranquilo`}
             </p>
           </Card>
@@ -248,7 +248,7 @@ export default async function Home() {
   );
 }
 
-/** Boas-vindas de quem acabou de criar a casa e ainda não tem nada. */
+/** Boas-vindas de quem acabou de criar o dindi e ainda não tem nada. */
 function PrimeiroDia({ nome }: { nome: string }) {
   return (
     <Card className="mb-8 bg-areia/50">

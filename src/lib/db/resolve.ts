@@ -167,6 +167,6 @@ export async function resolvePerson(
   if (found) return found.id;
 
   throw new DindiError(
-    `Não sei quem é "${query}". Na casa estão: ${members.map((m) => m.display_name).join(", ")}.`
+    `Não sei quem é "${query}". As pessoas são: ${members.map((m) => m.display_name).join(", ")}.`
   );
 }

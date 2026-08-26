@@ -9,10 +9,10 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "dindi — o dinheiro da casa, sem planilha",
+    name: "dindi — seu dinheiro, sem planilha",
     short_name: "dindi",
     description:
-      "Registre gastos conversando com o Claude. O dindi cuida das contas, faturas, orçamento e metas — sozinha ou dividindo com quem mora com você.",
+      "Registre gastos conversando com o Claude. O dindi cuida das contas, faturas, orçamento e metas — sozinha ou dividindo com quem você quiser.",
     lang: "pt-BR",
     start_url: "/",
     scope: "/",

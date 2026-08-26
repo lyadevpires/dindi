@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "dindi — o dinheiro da casa, sem planilha",
+  title: "dindi — seu dinheiro, sem planilha",
   description:
-    "Registre gastos conversando com o Claude. O dindi cuida das contas, faturas, orçamento e metas — sozinha ou dividindo com quem mora com você.",
+    "Registre gastos conversando com o Claude. O dindi cuida das contas, faturas, orçamento e metas — sozinha ou dividindo com quem você quiser.",
   // Sem isto o iPhone abre o atalho dentro do Safari, com barra de endereço e tudo.
   appleWebApp: { capable: true, title: "dindi", statusBarStyle: "default" },
 };

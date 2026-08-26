@@ -13,7 +13,7 @@ function configurar() {
 }
 
 /**
- * Entrega um recado em todos os celulares de uma casa.
+ * Entrega um recado em todos os celulares de um dindi.
  *
  * Aparelho que responde 404 ou 410 é aparelho que desinstalou o app ou limpou
  * o navegador — o endereço nunca mais vai funcionar, então some com ele em vez

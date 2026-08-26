@@ -6,7 +6,7 @@
  * favicon e dá para mudar a expressão dele conforme a notícia da tela.
  *
  * As expressões existem porque o dindi dá conselho: ele fica preocupado
- * quando o mês está no vermelho e comemora quando a casa guarda dinheiro.
+ * quando o mês está no vermelho e comemora quando sobra dinheiro guardado.
  */
 export type Humor = "feliz" | "atento" | "preocupado" | "comemorando" | "dormindo";
 

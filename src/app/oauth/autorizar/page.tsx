@@ -86,7 +86,7 @@ export default async function AutorizarPage(props: PageProps<"/oauth/autorizar">
     );
   }
 
-  // Precisa estar logado e ter uma casa antes de autorizar.
+  // Precisa estar logado e já ter um dindi antes de autorizar.
   const selfUrl = `/oauth/autorizar?${new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
@@ -124,7 +124,7 @@ export default async function AutorizarPage(props: PageProps<"/oauth/autorizar">
           </h1>
           <p className="mt-2 text-sm text-suave">
             Você está autorizando como <strong className="text-tinta">{session.displayName}</strong>,
-            na casa <strong className="text-tinta">{session.householdName}</strong>.
+            no <strong className="text-tinta">{session.householdName}</strong>.
           </p>
         </div>
 
@@ -136,7 +136,7 @@ export default async function AutorizarPage(props: PageProps<"/oauth/autorizar">
             <li>• Criar e acompanhar metas de economia</li>
           </ul>
           <p className="mt-3 text-xs text-suave">
-            Só nesta casa. Você pode desconectar quando quiser em Configurações.
+            Só aqui dentro. Você pode desconectar quando quiser em Ajustes.
           </p>
         </div>
 

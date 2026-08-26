@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ligarAvisos, desligarAvisos } from "@/app/(app)/casa/actions";
+import { ligarAvisos, desligarAvisos } from "@/app/(app)/ajustes/actions";
 
 type Estado = "carregando" | "sem_suporte" | "bloqueado" | "desligado" | "ligado" | "erro";
 
@@ -19,8 +19,8 @@ function paraBytes(base64: string): Uint8Array<ArrayBuffer> {
 /**
  * Liga o recado da manhã neste aparelho.
  *
- * A inscrição é por aparelho, não por conta: se duas pessoas moram na mesma
- * casa, cada celular é um cadastro, e cada um decide se quer ser avisado.
+ * A inscrição é por aparelho, não por conta: se duas pessoas dividem o mesmo
+ * dindi, cada celular é um cadastro, e cada um decide se quer ser avisado.
  */
 export function Avisos({ chavePublica }: { chavePublica: string }) {
   const [estado, setEstado] = useState<Estado>("carregando");

@@ -87,8 +87,8 @@ export async function createHousehold(
 
   const supabase = await supabaseServer();
   const { error } = await supabase.rpc("bootstrap_household", {
-    // A casa nasce batizada com o nome da pessoa; dá para renomear em /casa.
-    p_household_name: `Casa da ${displayName}`,
+    // Nasce batizado com o nome da pessoa; dá para renomear em /ajustes.
+    p_household_name: `dindi da ${displayName}`,
     p_display_name: displayName,
   });
 
@@ -169,6 +169,6 @@ export async function createInvite(_prev: ActionState): Promise<ActionState> {
   const supabase = await supabaseServer();
   const { data, error } = await supabase.rpc("create_invite", { p_email: null });
   if (error) return { error: error.message };
-  revalidatePath("/casa");
+  revalidatePath("/ajustes");
   return { ok: String(data) };
 }
