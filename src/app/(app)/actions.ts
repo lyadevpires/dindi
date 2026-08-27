@@ -45,9 +45,9 @@ export async function lancar(_prev: ActionState, formData: FormData): Promise<Ac
       ok:
         tipo === "income"
           ? `Anotado: entraram ${formatBRL(t.amount)} em ${t.category}.`
-          : `Anotado: ${formatBRL(t.amount)} em ${t.category}${
-              t.invoice_month ? ` — vai na fatura do ${t.account}` : ` — saiu do ${t.account}`
-            }.`,
+          : `Anotado: ${formatBRL(t.amount)} em ${t.category} ${
+              t.invoice_month ? "na fatura" : "pela"
+            } ${t.account}.`,
     };
   } catch (e) {
     if (e instanceof DindiError) return { error: e.message };
