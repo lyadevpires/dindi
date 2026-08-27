@@ -51,7 +51,9 @@ export function BotaoLancar({
           // Clicou no escuro em volta, e não no cartão: fecha.
           if (e.target === dialogo.current) dialogo.current?.close();
         }}
-        className="w-[calc(100vw-2rem)] max-w-sm rounded-2xl border border-borda bg-white p-0 text-tinta backdrop:bg-tinta/40 backdrop:backdrop-blur-sm"
+        // O `m-auto` é o que centraliza: o reset do Tailwind zera a margem que
+        // o navegador dá de graça para o <dialog>.
+        className="m-auto w-[calc(100vw-2rem)] max-w-sm rounded-2xl border border-borda bg-white p-0 text-tinta backdrop:bg-tinta/40 backdrop:backdrop-blur-sm"
       >
         {/*
           Sem nenhuma conta não existe onde lançar. Em vez de esconder o botão
