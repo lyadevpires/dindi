@@ -21,6 +21,17 @@
   --color-roxinho: #7b62c9;
   --color-roxinho-claro: #f0ecfb;
 
+  /*
+   * Os blocos do "onde mais saiu" da tela inicial. São versões mais fundas das
+   * cores de cima: os tons claros são bonitos como detalhe, mas texto branco
+   * em cima deles não se lê. Estes aguentam.
+   */
+  --color-bloco-1: #c2611f;
+  --color-bloco-2: #2f7a5c;
+  --color-bloco-3: #34619e;
+  --color-bloco-4: #5f4aa8;
+  --color-bloco-5: #a8443d;
+
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }

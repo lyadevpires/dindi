@@ -1,8 +1,14 @@
 import Link from "next/link";
 import { Dindi } from "@/components/dindi";
-import { Card, Empty, Pill, Progress, SectionTitle } from "@/components/ui";
+import { Card, Empty, Progress, SectionTitle } from "@/components/ui";
 import { Conselhos } from "@/components/conselhos";
 import { Grupos } from "@/components/grupos";
+import {
+  EntrouSaiu,
+  GastoVsCombinado,
+  OndeMaisSaiu,
+  Saldo,
+} from "@/components/resumo";
 import { pageCtx } from "@/lib/ctx";
 import { listTransactions } from "@/lib/db/finance";
 import { getRetratoDoMes, montarConselhos } from "@/lib/db/conselhos";
@@ -27,12 +33,35 @@ export default async function Home() {
   const reserva = metas.find((m) => m.kind === "emergencia");
   const sonhos = metas.filter((m) => m.kind === "sonho");
 
+  // As categorias que mais pesaram no mês, misturando os baldes: quem olha
+  // "onde saiu mais" quer ver "mercado", não "dia a dia".
+  const maioresGastos = grupos.groups
+    .filter((g) => g.bucket !== "guardar")
+    .flatMap((g) => g.categories)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
+
   return (
     <>
       {semNada ? <PrimeiroDia nome={session.displayName} /> : null}
 
+      {/* ---------------- O retrato da conta ---------------- */}
+      <Saldo
+        total={saldos.net_worth}
+        emContas={saldos.total_in_accounts}
+        noCartao={saldos.total_credit_card_debt}
+        contas={saldos.accounts}
+      />
+      <EntrouSaiu entrou={grupos.income} saiu={grupos.total_spent} />
+
       {/* ---------------- O que o dindi tem a dizer ---------------- */}
       {semNada ? null : <Conselhos itens={conselhos} />}
+
+      {/* ---------------- Onde mais saiu ---------------- */}
+      <OndeMaisSaiu categorias={maioresGastos} />
+
+      {/* ---------------- Gasto x combinado ---------------- */}
+      <GastoVsCombinado budgets={orcamento.budgets} />
 
       {/* ---------------- Reserva de emergência ---------------- */}
       {reserva ? (
@@ -102,104 +131,6 @@ export default async function Home() {
           </div>
         )}
       </section>
-
-      {/* ---------------- Saldos ---------------- */}
-      <section className="mb-8">
-        <SectionTitle>Onde está o dinheiro</SectionTitle>
-
-        <div className="mb-3 grid gap-3 sm:grid-cols-3">
-          <Card>
-            <p className="text-xs uppercase tracking-wide text-suave">Nas contas</p>
-            <p className="tabular mt-1 text-2xl font-bold">
-              {formatBRL(saldos.total_in_accounts)}
-            </p>
-          </Card>
-          <Card>
-            <p className="text-xs uppercase tracking-wide text-suave">Nos cartões</p>
-            <p className="tabular mt-1 text-2xl font-bold text-vermelhinho">
-              {formatBRL(saldos.total_credit_card_debt)}
-            </p>
-          </Card>
-          <Card>
-            <p className="text-xs uppercase tracking-wide text-suave">Sobra de verdade</p>
-            <p
-              className={`tabular mt-1 text-2xl font-bold ${
-                saldos.net_worth < 0 ? "text-vermelhinho" : "text-verdinho"
-              }`}
-            >
-              {formatBRL(saldos.net_worth)}
-            </p>
-          </Card>
-        </div>
-
-        {saldos.accounts.length === 0 ? (
-          <Empty>
-            Nenhuma conta cadastrada ainda. Peça pro Claude:{" "}
-            <em>&ldquo;cria a conta do Nubank com 2 mil de saldo&rdquo;</em>.
-          </Empty>
-        ) : (
-          <Card className="p-0">
-            <ul className="divide-y divide-borda">
-              {saldos.accounts.map((a) => (
-                <li key={a.account} className="flex items-center justify-between gap-3 px-5 py-3">
-                  <span className="flex items-center gap-2">
-                    <span className="font-medium">{a.account}</span>
-                    <Pill tone={a.type === "credit_card" ? "roxo" : "azul"}>
-                      {a.type === "credit_card"
-                        ? "cartão"
-                        : a.type === "savings"
-                          ? "poupança"
-                          : "conta"}
-                    </Pill>
-                  </span>
-                  <span
-                    className={`tabular font-semibold ${
-                      a.balance < 0 ? "text-vermelhinho" : ""
-                    }`}
-                  >
-                    {formatBRL(a.balance)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
-      </section>
-
-      {/* ---------------- Orçamento ---------------- */}
-      {orcamento.budgets.length > 0 ? (
-        <section className="mb-8">
-          <SectionTitle
-            action={
-              <Link href="/orcamento" className="text-sm text-suave underline underline-offset-2">
-                ver tudo
-              </Link>
-            }
-          >
-            Orçamento de {monthLabel(orcamento.month)}
-          </SectionTitle>
-          <Card>
-            <ul className="space-y-4">
-              {orcamento.budgets.slice(0, 4).map((b) => (
-                <li key={b.category}>
-                  <div className="mb-1.5 flex items-baseline justify-between gap-2 text-sm">
-                    <span className="font-medium">{b.category}</span>
-                    <span className="tabular text-suave">
-                      {formatBRL(b.spent)} de {formatBRL(b.limit_amount)}
-                    </span>
-                  </div>
-                  <Progress
-                    percent={b.percent_used}
-                    tone={
-                      b.status === "estourou" ? "vermelho" : b.status === "atenção" ? "amarelo" : "verde"
-                    }
-                  />
-                </li>
-              ))}
-            </ul>
-          </Card>
-        </section>
-      ) : null}
 
       {/* ---------------- Últimos lançamentos ---------------- */}
       <section>
