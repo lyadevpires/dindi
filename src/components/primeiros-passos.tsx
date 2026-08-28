@@ -173,7 +173,7 @@ function NaTelaDoCelular() {
         <Dindi size={64} humor="comemorando" className="pulinho shrink-0" />
         <div>
           <Titulo>Bota o dindi na tela do celular</Titulo>
-          <p className="mt-2 text-sm leading-relaxed text-suave">
+          <p className="justo mt-2 text-sm leading-relaxed text-suave">
             Ele vira um ícone igual aos outros apps: abre em tela cheia, sem barra
             de endereço, e você não precisa mais digitar o site.
           </p>
@@ -237,7 +237,7 @@ function ConectarClaude({ url }: { url: string }) {
         <Dindi size={64} humor="atento" className="pulinho shrink-0" />
         <div>
           <Titulo>Agora conecte o Claude</Titulo>
-          <p className="mt-2 text-sm leading-relaxed text-suave">
+          <p className="justo mt-2 text-sm leading-relaxed text-suave">
             É ele quem anota. Depois disso você só fala —{" "}
             <em>&ldquo;gastei 45 no mercado&rdquo;</em> — e aparece aqui, na categoria
             certa.

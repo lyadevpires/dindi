@@ -65,7 +65,7 @@ export function Conselhos({ itens }: { itens: Conselho[] }) {
                     {e.etiqueta}
                   </p>
                   <h3 className="mt-1 font-semibold">{c.titulo}</h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-suave">{c.texto}</p>
+                  <p className="justo mt-1.5 text-sm leading-relaxed text-suave">{c.texto}</p>
 
                   {c.sugestao ? (
                     <p className="mt-3 text-sm text-suave">

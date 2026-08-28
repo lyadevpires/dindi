@@ -28,7 +28,7 @@ export default function Privacidade() {
       <h1 className="text-3xl font-bold leading-tight tracking-tight">
         O que o dindi faz com os seus dados
       </h1>
-      <p className="mt-3 text-base leading-relaxed text-suave">
+      <p className="justo mt-3 text-base leading-relaxed text-suave">
         Sem letra miúda. Se depois de ler sobrar dúvida, escreve pra gente que a
         gente responde.
       </p>
@@ -152,7 +152,7 @@ function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode
   return (
     <section className="mt-10">
       <h2 className="text-xl font-bold tracking-tight">{titulo}</h2>
-      <div className="mt-3 text-base leading-relaxed text-suave">{children}</div>
+      <div className="justo mt-3 text-base leading-relaxed text-suave">{children}</div>
     </section>
   );
 }

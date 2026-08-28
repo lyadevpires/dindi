@@ -41,6 +41,23 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * Texto corrido com as duas margens retas.
+ *
+ * Justificar em coluna estreita só funciona junto com separação de sílabas —
+ * sem ela o navegador estica os espaços e abrem-se aqueles rios brancos no
+ * meio do parágrafo. Como o <html> declara lang="pt-BR", o próprio navegador
+ * sabe onde parte cada palavra em português.
+ *
+ * Vale só para parágrafo de leitura. Título, rótulo e número continuam
+ * alinhados à esquerda, que é onde o olho procura.
+ */
+.justo {
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
 /* -------------------------------------------------------------------
    Animações dos primeiros passos. Só ali — o resto do app é parado.
    ------------------------------------------------------------------- */

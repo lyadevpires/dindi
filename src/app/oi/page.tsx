@@ -97,7 +97,7 @@ export default function Oi() {
                 </span>
                 <div className="min-w-0">
                   <h3 className="font-semibold">{p.titulo}</h3>
-                  <p className="mt-0.5 text-sm leading-relaxed text-suave">{p.texto}</p>
+                  <p className="justo mt-0.5 text-sm leading-relaxed text-suave">{p.texto}</p>
 
                   {p.exemplos ? (
                     <div className="mt-3 space-y-1.5">
@@ -129,7 +129,7 @@ export default function Oi() {
               className="rounded-2xl border border-borda bg-white p-5 shadow-[0_1px_2px_rgba(44,36,32,0.04)]"
             >
               <h3 className="font-semibold">{c.titulo}</h3>
-              <p className="mt-1 text-sm leading-relaxed text-suave">{c.texto}</p>
+              <p className="justo mt-1 text-sm leading-relaxed text-suave">{c.texto}</p>
             </div>
           ))}
         </div>
@@ -138,7 +138,7 @@ export default function Oi() {
       {/* ---------------- Sozinha ou dividindo ---------------- */}
       <section className="mt-14 rounded-2xl bg-areia/60 p-6">
         <h2 className="text-xl font-bold tracking-tight">Sozinha ou dividindo</h2>
-        <p className="mt-2 text-sm leading-relaxed text-suave">
+        <p className="justo mt-2 text-sm leading-relaxed text-suave">
           Começa só com você. Se um dia quiser, chama quem divide as contas — o
           marido, a mãe, o irmão, um filho. Ou ninguém. Não tem limite de gente e
           não precisa ser ninguém em especial.
