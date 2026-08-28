@@ -36,3 +36,62 @@ body {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* -------------------------------------------------------------------
+   Animações dos primeiros passos. Só ali — o resto do app é parado.
+   ------------------------------------------------------------------- */
+@keyframes surge {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pulinho {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes cai {
+  from {
+    transform: translateY(-10vh) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(105vh) rotate(540deg);
+    opacity: 0;
+  }
+}
+
+.surge {
+  animation: surge 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.pulinho {
+  animation: pulinho 2.4s ease-in-out infinite;
+}
+
+.cai {
+  animation: cai 2.6s linear forwards;
+}
+
+/* Quem pede menos movimento no sistema recebe a tela parada. */
+@media (prefers-reduced-motion: reduce) {
+  .surge,
+  .pulinho,
+  .cai {
+    animation: none;
+  }
+  .cai {
+    display: none;
+  }
+}

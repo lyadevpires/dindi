@@ -200,8 +200,11 @@ export default async function Ajustes() {
       <section className="mb-8">
         <SectionTitle
           action={
-            <Link href="/conectar" className="text-sm text-suave underline underline-offset-2">
-              como conectar
+            <Link
+              href="/primeiros-passos"
+              className="text-sm text-suave underline underline-offset-2"
+            >
+              primeiros passos
             </Link>
           }
         >

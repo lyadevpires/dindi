@@ -95,7 +95,8 @@ export async function createHousehold(
   if (error) return { error: error.message };
 
   revalidatePath("/", "layout");
-  redirect(next);
+  // Direto para os primeiros passos: é aqui que se ganha ou se perde a pessoa.
+  redirect(next === "/" ? "/primeiros-passos" : next);
 }
 
 export async function joinHousehold(
@@ -118,7 +119,8 @@ export async function joinHousehold(
   if (error) return { error: error.message };
 
   revalidatePath("/", "layout");
-  redirect(next);
+  // Quem entra por convite também precisa do app no celular e do Claude.
+  redirect(next === "/" ? "/primeiros-passos" : next);
 }
 
 /**

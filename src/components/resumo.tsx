@@ -149,7 +149,7 @@ export function OndeMaisSaiu({
             return (
               <li
                 key={c.name}
-                className={`flex h-36 w-36 shrink-0 flex-col justify-between rounded-2xl p-4 ${
+                className={`flex h-36 w-40 shrink-0 flex-col justify-between rounded-2xl p-4 ${
                   primeiro
                     ? "bg-tinta text-creme"
                     : "border border-borda bg-areia text-tinta"
@@ -168,7 +168,7 @@ export function OndeMaisSaiu({
                   >
                     {c.name}
                   </p>
-                  <p className="tabular truncate text-xl font-bold">{formatBRL(c.total)}</p>
+                  <p className="tabular truncate text-lg font-bold">{formatBRL(c.total)}</p>
                 </div>
               </li>
             );
