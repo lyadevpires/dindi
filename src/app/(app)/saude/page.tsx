@@ -29,9 +29,9 @@ export default async function SaudePage() {
         <h1 className="mt-4 text-lg font-semibold tracking-tight">
           Saúde do seu dinheiro
         </h1>
-        <p className="mt-1 text-sm text-suave">
+        <p className="justo mx-auto mt-1 max-w-sm text-center text-sm leading-relaxed text-suave">
           {saude.nota === null
-            ? "Assim que houver o que medir, a nota aparece aqui."
+            ? "Ainda não dá para dar nota — falta o dindi conhecer suas contas. Veja abaixo o que falta para cada ponto."
             : `${saude.medidos} de ${saude.pilares.length} pontos medidos hoje`}
         </p>
       </section>

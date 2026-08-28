@@ -54,7 +54,7 @@ export function calcularSaude(retrato: RetratoDoMes): Saude {
 
   const pilares: Pilar[] = [
     reservaDeEmergencia(metas, reservaIdeal),
-    dividaNoCartao(fatura, emConta),
+    dividaNoCartao(fatura, emConta, saldos.accounts.length),
     quantoGuarda(renda, grupo("guardar").total),
     pesoDasFixas(renda, grupo("fixo").total),
     orcamentoRespeitado(orcamento.budgets),
@@ -65,8 +65,16 @@ export function calcularSaude(retrato: RetratoDoMes): Saude {
   const medidos = pilares.filter((p) => p.nota !== null);
   const pesoTotal = medidos.reduce((s, p) => s + p.peso, 0);
 
+  /*
+   * Abaixo de metade do peso medido não existe nota, e sim silêncio.
+   *
+   * Sem isto, uma conta recém-criada tirava 10: o único ponto mensurável era
+   * "não deve nada no cartão" — verdade, mas verdade de quem ainda não tem
+   * cartão. Um dez que não quer dizer nada estraga a confiança em todos os
+   * outros dez que virão depois.
+   */
   const nota =
-    pesoTotal > 0
+    pesoTotal >= 50
       ? Math.round((medidos.reduce((s, p) => s + p.nota! * p.peso, 0) / pesoTotal) * 10) / 10
       : null;
 
@@ -107,8 +115,19 @@ function reservaDeEmergencia(
 }
 
 /** 25% — dever no cartão é o buraco mais caro que existe. */
-function dividaNoCartao(fatura: number, emConta: number): Pilar {
+function dividaNoCartao(fatura: number, emConta: number, contas: number): Pilar {
   const base = { id: "cartao", nome: "Dívida no cartão", peso: 25 };
+
+  // Sem nenhuma conta cadastrada, "não deve nada" é verdade de quem ainda não
+  // contou nada — não é mérito, e não pode virar nota dez.
+  if (contas === 0) {
+    return {
+      ...base,
+      nota: null,
+      porque:
+        "Você ainda não cadastrou nenhuma conta ou cartão. Assim que cadastrar, eu passo a olhar o quanto a fatura pesa.",
+    };
+  }
 
   if (fatura <= 0) {
     return {
