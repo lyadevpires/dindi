@@ -33,12 +33,15 @@ export function BotaoLancar({
 
   return (
     <>
+      {/*
+        Mora no meio da barra de baixo, elevado. O rosa é o do porquinho, e o
+        traço escuro em cima dele é o que garante que dê para ler.
+      */}
       <button
         type="button"
         onClick={() => dialogo.current?.showModal()}
-        aria-label="Registrar um gasto"
-        className="fixed right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-tinta text-3xl leading-none text-creme shadow-lg transition hover:opacity-90 active:scale-95"
-        style={{ bottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
+        aria-label="Anotar um gasto"
+        className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-creme bg-rosinha-forte text-3xl leading-none text-tinta shadow-md transition hover:brightness-95 active:scale-95"
       >
         <span aria-hidden className="-mt-0.5">
           +

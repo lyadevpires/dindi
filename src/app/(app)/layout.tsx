@@ -33,24 +33,25 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       displayName={session.displayName}
       householdName={session.householdName}
       aviso={(conexoes.count ?? 0) > 0 ? null : <AvisoConectar />}
+      lancar={
+        <BotaoLancar
+          contas={contas.filter((c) => !c.archived)}
+          categorias={categorias}
+          hoje={today()}
+        />
+      }
       sair={
         <form action={signOut}>
           <button
             type="submit"
-            className="rounded-lg px-2.5 py-1.5 text-suave transition hover:bg-areia"
+            className="rounded-xl px-4 py-2.5 text-sm text-vermelhinho transition hover:bg-vermelhinho-claro"
           >
-            Sair
+            Sair da conta
           </button>
         </form>
       }
     >
       {children}
-
-      <BotaoLancar
-        contas={contas.filter((c) => !c.archived)}
-        categorias={categorias}
-        hoje={today()}
-      />
     </Shell>
   );
 }

@@ -21,6 +21,10 @@
   --color-roxinho: #7b62c9;
   --color-roxinho-claro: #f0ecfb;
 
+  /* O rosa do porquinho — a pele e a bochecha dele, tiradas do próprio SVG. */
+  --color-rosinha: #fbd5cd;
+  --color-rosinha-forte: #f3b9ae;
+
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
@@ -61,6 +65,19 @@ body {
   }
 }
 
+@keyframes sobe {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.sobe {
+  animation: sobe 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
 @keyframes cai {
   from {
     transform: translateY(-10vh) rotate(0deg);
@@ -88,7 +105,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .surge,
   .pulinho,
-  .cai {
+  .cai,
+  .sobe {
     animation: none;
   }
   .cai {
