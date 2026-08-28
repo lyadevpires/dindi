@@ -1,5 +1,5 @@
 import { Card, Empty, Pill, SectionTitle } from "@/components/ui";
-import { PararFixa } from "@/components/fixas";
+import { ApagarParcelamento, PararFixa } from "@/components/fixas";
 import { pageCtx } from "@/lib/ctx";
 import { listRecurringRules, listTransactions, parcelasEmAberto } from "@/lib/db/finance";
 import { formatBRL, round2 } from "@/lib/money";
@@ -140,9 +140,12 @@ export default async function Fixas() {
                       {c.conta} · faltam {c.restam} · última em {formatDate(c.ate)}
                     </p>
                   </div>
-                  <span className="tabular shrink-0 font-semibold">
-                    {formatBRL(c.valor)}
-                    <span className="font-normal text-suave">/mês</span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <span className="tabular font-semibold">
+                      {formatBRL(c.valor)}
+                      <span className="font-normal text-suave">/mês</span>
+                    </span>
+                    <ApagarParcelamento id={id} descricao={c.descricao} />
                   </span>
                 </li>
               ))}

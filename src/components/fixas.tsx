@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
-import { pararFixa } from "@/app/(app)/actions";
+import { apagarParcelamento, pararFixa } from "@/app/(app)/actions";
 
 /**
  * Parar uma conta fixa.
@@ -44,7 +44,7 @@ export function PararFixa({ id, descricao }: { id: string; descricao: string }) 
   );
 }
 
-function Confirmar() {
+function Confirmar({ rotulo = "parar" }: { rotulo?: string }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -52,7 +52,45 @@ function Confirmar() {
       disabled={pending}
       className="rounded-lg bg-vermelhinho-claro px-3 py-2.5 text-sm font-medium text-vermelhinho transition hover:brightness-95 disabled:opacity-50"
     >
-      {pending ? "parando" : "parar?"}
+      {pending ? `${rotulo}...` : `${rotulo}?`}
     </button>
+  );
+}
+
+/**
+ * Apagar um parcelamento inteiro.
+ *
+ * Some com as parcelas todas, inclusive as que já passaram — é o que se quer
+ * quando a compra foi devolvida ou digitada errada. Consertar uma compra em
+ * 10x parcela por parcela, mês a mês, seria castigo.
+ */
+export function ApagarParcelamento({ id, descricao }: { id: string; descricao: string }) {
+  const [perguntando, setPerguntando] = useState(false);
+
+  return (
+    <form action={apagarParcelamento} className="shrink-0">
+      <input type="hidden" name="id" value={id} />
+      {perguntando ? (
+        <span className="flex items-center gap-1">
+          <Confirmar rotulo="apagar tudo" />
+          <button
+            type="button"
+            onClick={() => setPerguntando(false)}
+            className="rounded-lg px-3 py-2.5 text-sm text-suave transition hover:bg-areia"
+          >
+            não
+          </button>
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setPerguntando(true)}
+          aria-label={`Apagar o parcelamento de ${descricao}`}
+          className="rounded-lg px-3 py-2.5 text-sm text-suave transition hover:bg-areia"
+        >
+          apagar
+        </button>
+      )}
+    </form>
   );
 }

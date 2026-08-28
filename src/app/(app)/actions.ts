@@ -155,6 +155,31 @@ async function criarParcelado(
   }
 }
 
+/**
+ * Apagar uma compra parcelada inteira.
+ *
+ * Some com todas as parcelas de uma vez, as que já passaram e as que faltam.
+ * É o que se quer quando a compra foi devolvida, cancelada, ou digitada
+ * errada — e digitar errado uma compra em 10x é péssimo de consertar parcela
+ * por parcela, mês a mês, no extrato.
+ *
+ * O banco faz o resto: as parcelas apontam para a compra com "apagar em
+ * cascata", então basta apagar a compra.
+ */
+export async function apagarParcelamento(formData: FormData): Promise<void> {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const { ctx } = await pageCtx();
+  await ctx.db
+    .from("credit_card_purchases")
+    .delete()
+    .eq("id", id)
+    .eq("household_id", ctx.householdId);
+
+  revalidatePath("/", "layout");
+}
+
 /** Desliga uma conta fixa — ela para de ser lançada nos próximos meses. */
 export async function pararFixa(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
