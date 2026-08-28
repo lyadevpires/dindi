@@ -22,7 +22,7 @@ export function ApagarLancamento({ descricao }: { descricao: string }) {
         type="button"
         onClick={() => setPerguntando(true)}
         aria-label={`Apagar ${descricao}`}
-        className="shrink-0 rounded-lg px-2.5 py-2 text-sm text-suave transition hover:bg-areia"
+        className="shrink-0 rounded-lg px-3 py-2.5 text-sm text-suave transition hover:bg-areia"
       >
         apagar
       </button>
@@ -35,7 +35,7 @@ export function ApagarLancamento({ descricao }: { descricao: string }) {
       <button
         type="button"
         onClick={() => setPerguntando(false)}
-        className="rounded-lg px-2.5 py-2 text-sm text-suave transition hover:bg-areia"
+        className="rounded-lg px-3 py-2.5 text-sm text-suave transition hover:bg-areia"
       >
         não
       </button>
@@ -49,7 +49,7 @@ function Confirmar() {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-lg bg-vermelhinho-claro px-2.5 py-2 text-sm font-medium text-vermelhinho transition hover:brightness-95 disabled:opacity-50"
+      className="rounded-lg bg-vermelhinho-claro px-3 py-2.5 text-sm font-medium text-vermelhinho transition hover:brightness-95 disabled:opacity-50"
     >
       {pending ? "apagando" : "apagar?"}
     </button>
@@ -82,9 +82,11 @@ export function ApagarConta({ id, nome }: { id: string; nome: string }) {
   const [estado, acao] = useActionState<ActionState, FormData>(apagarConta, null);
   const [perguntando, setPerguntando] = useState(false);
 
+  // O recado de erro vai numa linha inteira só dele (`w-full` dentro de um pai
+  // que embrulha): numa tela de celular ele não cabe ao lado do nome da conta.
   return (
-    <div className="shrink-0 text-right">
-      <form action={acao}>
+    <>
+      <form action={acao} className="shrink-0">
         <input type="hidden" name="id" value={id} />
         {perguntando ? (
           <span className="flex items-center gap-1">
@@ -92,7 +94,7 @@ export function ApagarConta({ id, nome }: { id: string; nome: string }) {
             <button
               type="button"
               onClick={() => setPerguntando(false)}
-              className="rounded-lg px-2.5 py-2 text-sm text-suave transition hover:bg-areia"
+              className="rounded-lg px-3 py-2.5 text-sm text-suave transition hover:bg-areia"
             >
               não
             </button>
@@ -102,7 +104,7 @@ export function ApagarConta({ id, nome }: { id: string; nome: string }) {
             type="button"
             onClick={() => setPerguntando(true)}
             aria-label={`Apagar ${nome}`}
-            className="rounded-lg px-2.5 py-2 text-sm text-suave transition hover:bg-areia"
+            className="rounded-lg px-3 py-2.5 text-sm text-suave transition hover:bg-areia"
           >
             apagar
           </button>
@@ -110,8 +112,8 @@ export function ApagarConta({ id, nome }: { id: string; nome: string }) {
       </form>
 
       {estado?.error ? (
-        <p className="mt-1 max-w-[16rem] text-xs text-vermelhinho">{estado.error}</p>
+        <p className="w-full text-sm text-vermelhinho">{estado.error}</p>
       ) : null}
-    </div>
+    </>
   );
 }

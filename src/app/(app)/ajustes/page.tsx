@@ -137,7 +137,10 @@ export default async function Ajustes() {
           <Card className="p-0">
             <ul className="divide-y divide-borda">
               {contas.map((c) => (
-                <li key={c.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                <li
+                  key={c.id}
+                  className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-5 py-3"
+                >
                   <div className="min-w-0">
                     <p className="truncate font-medium">
                       {c.name}
