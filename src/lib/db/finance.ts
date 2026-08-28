@@ -14,6 +14,7 @@ import {
   resolveCategory,
   resolvePerson,
 } from "./resolve";
+import { avisarSobreOGasto } from "./alertas";
 import {
   BUCKETS,
   BUCKET_HINT,
@@ -84,6 +85,16 @@ export async function addTransaction(ctx: Ctx, input: AddTransactionInput) {
     .single();
 
   if (error) throw new DindiError(error.message);
+
+  // Todo gasto passa por aqui — do Claude ou do botão do site —, então é o
+  // único lugar onde vale checar se esse gasto merece um aviso na hora.
+  await avisarSobreOGasto(ctx, {
+    amount: round2(input.amount),
+    description: input.description.trim(),
+    category: category?.name ?? null,
+    categoryId: category?.id ?? null,
+    type,
+  });
 
   return {
     id: data.id,
@@ -244,6 +255,8 @@ export async function listTransactions(ctx: Ctx, f: ListTransactionsFilters = {}
     installment:
       t.installment_number && t.purchase_id ? `${t.installment_number}ª parcela` : null,
     invoice_month: t.invoice_month,
+    // Veio de uma conta fixa, e não de alguém digitando.
+    recurring_rule_id: (t.recurring_rule_id as string | null) ?? null,
   }));
 
   const totalExpense = round2(

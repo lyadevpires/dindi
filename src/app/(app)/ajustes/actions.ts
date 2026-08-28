@@ -1,8 +1,11 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireSession } from "@/lib/auth";
+import type { ActionState } from "@/app/auth/actions";
 
 /** Troca o nome do dindi. O RLS só deixa mexer no dindi de quem participa dele. */
 export async function renameHousehold(formData: FormData): Promise<void> {
@@ -70,6 +73,73 @@ export async function ligarAvisos(inscricao: Inscricao): Promise<string | null> 
 
   revalidatePath("/ajustes");
   return null;
+}
+
+/**
+ * Apagar a conta e tudo que veio com ela.
+ *
+ * É de verdade: nada de "desativar" e guardar o dado escondido. Quem pede para
+ * sair sai, e é exigência da LGPD que seja assim.
+ *
+ * Duas situações diferentes:
+ *
+ *   - você é a única pessoa no dindi → o dindi inteiro vai embora, e com ele
+ *     contas, lançamentos, faturas, metas e limites (o banco apaga em cascata);
+ *
+ *   - tem mais gente → só a sua participação sai. Os lançamentos que você
+ *     registrou continuam lá, porque o dinheiro foi de todo mundo e sumir com
+ *     eles bagunçaria o extrato dos outros. Se você era quem criou, a pessoa
+ *     mais antiga que ficou herda esse papel — senão o dindi ficaria sem dono.
+ */
+export async function apagarMinhaConta(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const confirmacao = String(formData.get("confirmacao") ?? "").trim().toUpperCase();
+  if (confirmacao !== "APAGAR") {
+    return { error: "Para confirmar, escreva APAGAR no campo." };
+  }
+
+  const session = await requireSession();
+  const admin = supabaseAdmin();
+
+  const { data: membros } = await admin
+    .from("household_members")
+    .select("user_id, role, created_at")
+    .eq("household_id", session.householdId)
+    .order("created_at", { ascending: true });
+
+  const outros = (membros ?? []).filter((m) => m.user_id !== session.userId);
+
+  if (outros.length === 0) {
+    const { error } = await admin.from("households").delete().eq("id", session.householdId);
+    if (error) return { error: error.message };
+  } else {
+    await admin
+      .from("household_members")
+      .delete()
+      .eq("household_id", session.householdId)
+      .eq("user_id", session.userId);
+
+    if (session.role === "owner") {
+      await admin
+        .from("household_members")
+        .update({ role: "owner" })
+        .eq("household_id", session.householdId)
+        .eq("user_id", outros[0].user_id);
+    }
+  }
+
+  // Por último o login. Isso leva junto os tokens dos apps conectados e as
+  // inscrições de aviso, que apontam para o usuário.
+  const { error: authErro } = await admin.auth.admin.deleteUser(session.userId);
+  if (authErro) return { error: authErro.message };
+
+  const supabase = await supabaseServer();
+  await supabase.auth.signOut();
+
+  revalidatePath("/", "layout");
+  redirect("/");
 }
 
 /** Tira este aparelho da lista. */

@@ -2,14 +2,14 @@ import Link from "next/link";
 import { Card, Empty, Pill, SectionTitle } from "@/components/ui";
 import { ConviteBotao } from "@/components/convite";
 import { ApagarConta } from "@/components/apagar";
+import { ApagarMinhaConta } from "@/components/apagar-conta";
 import { ActionForm, Field } from "@/components/auth-form";
 import { Avisos } from "@/components/avisos";
 import { updatePassword } from "@/app/auth/actions";
 import { renameHousehold, revokeConnection } from "./actions";
 import { pageCtx } from "@/lib/ctx";
 import { appUrl, env } from "@/lib/env";
-import { listAccounts, listCategories, listRecurringRules } from "@/lib/db/finance";
-import { formatBRL } from "@/lib/money";
+import { listAccounts, listCategories } from "@/lib/db/finance";
 import { formatDate } from "@/lib/dates";
 import { allMembers } from "@/lib/db/resolve";
 import { BUCKET_HINT, BUCKET_LABEL } from "@/lib/db/types";
@@ -21,11 +21,10 @@ const TIPO = { checking: "conta corrente", savings: "poupança", credit_card: "c
 export default async function Ajustes() {
   const { session, ctx } = await pageCtx();
 
-  const [membros, contas, categorias, recorrencias] = await Promise.all([
+  const [membros, contas, categorias] = await Promise.all([
     allMembers(ctx),
     listAccounts(ctx),
     listCategories(ctx),
-    listRecurringRules(ctx),
   ]);
 
   const { data: tokens } = await ctx.db
@@ -161,41 +160,6 @@ export default async function Ajustes() {
         )}
       </section>
 
-      {/* ---------------- Recorrências ---------------- */}
-      <section className="mb-8">
-        <SectionTitle>Todo mês, no automático</SectionTitle>
-        {recorrencias.length === 0 ? (
-          <Empty>
-            Nada automático ainda. Peça pro Claude:{" "}
-            <em>&ldquo;todo dia 5 sai 2.400 de aluguel&rdquo;</em>.
-          </Empty>
-        ) : (
-          <Card className="p-0">
-            <ul className="divide-y divide-borda">
-              {recorrencias.map((r) => (
-                <li key={r.id} className="flex items-center justify-between gap-3 px-5 py-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{r.description}</p>
-                    <p className="text-xs text-suave">
-                      dia {r.day_of_month} · {r.account}
-                      {r.category ? ` · ${r.category}` : ""}
-                      {r.end_date ? ` · até ${formatDate(r.end_date)}` : ""}
-                    </p>
-                  </div>
-                  <span
-                    className={`tabular shrink-0 font-semibold ${
-                      r.type === "income" ? "text-verdinho" : ""
-                    }`}
-                  >
-                    {r.type === "income" ? "+" : "−"} {formatBRL(r.amount)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
-      </section>
-
       {/* ---------------- Conexões ---------------- */}
       <section className="mb-8">
         <SectionTitle
@@ -270,6 +234,21 @@ export default async function Ajustes() {
           O Claude cria categoria nova sozinho quando você fala de algo diferente. Se alguma
           estiver no grupo errado, é só falar: <em>&ldquo;academia é conta fixa pra mim&rdquo;</em>.
         </p>
+      </section>
+
+      {/* ---------------- Sair de vez ---------------- */}
+      <section className="mt-10 border-t border-borda pt-8">
+        <SectionTitle>Seus dados</SectionTitle>
+        <Card>
+          <p className="mb-4 text-sm leading-relaxed text-suave">
+            Tudo que está aqui é seu. Dá para ler o que fica guardado e como na{" "}
+            <Link href="/privacidade" className="underline underline-offset-2">
+              página de privacidade
+            </Link>
+            .
+          </p>
+          <ApagarMinhaConta sozinha={membros.length === 1} />
+        </Card>
       </section>
     </>
   );

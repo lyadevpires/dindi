@@ -8,6 +8,7 @@ const NAV = [
   { href: "/", label: "Início" },
   { href: "/extrato", label: "Extrato" },
   { href: "/cartoes", label: "Cartões" },
+  { href: "/fixas", label: "Fixas" },
   { href: "/orcamento", label: "Orçamento" },
   { href: "/metas", label: "Metas" },
   { href: "/ajustes", label: "Ajustes" },
@@ -86,6 +87,10 @@ export function Shell({
         contar pro Claude.{" "}
         <Link href="/conectar" className="underline underline-offset-2">
           Como conectar
+        </Link>
+        {" · "}
+        <Link href="/privacidade" className="underline underline-offset-2">
+          Privacidade
         </Link>
       </footer>
     </>

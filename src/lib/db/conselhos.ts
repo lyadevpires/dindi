@@ -40,6 +40,19 @@ export type Conselho = {
 
 const ORDEM: Record<Nivel, number> = { urgente: 0, atencao: 1, dica: 2, parabens: 3 };
 
+/**
+ * Tem dinheiro em conta que dê para separar sem apertar?
+ *
+ * Mandar "guarde 10%" para quem está com a conta raspando é conselho de quem
+ * não olhou o saldo. Só sugere guardar se sobrar folga depois de guardar.
+ */
+function emContaSuficiente(
+  saldos: { total_in_accounts: number | string },
+  renda: number
+): boolean {
+  return num(saldos.total_in_accounts) >= renda * 0.1;
+}
+
 /** Que fatia do mês já passou (0 a 1). Serve para projetar o gasto até o dia 31. */
 function fracaoDoMes(mes: string): number {
   const inicio = new Date(`${mes}T00:00:00`);
@@ -251,6 +264,65 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
       nivel: "parabens",
       titulo: "Mês bom: sobrou dinheiro guardado",
       texto: `${formatBRL(guardar.total)} foram para o futuro — ${guardar.percent}% de tudo que entrou. Guardar 20% é a marca que quase ninguém bate.`,
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // 7b. Chegou dinheiro e ainda está tudo na conta
+  // -------------------------------------------------------------------
+  //
+  // O melhor momento para guardar é o dia seguinte ao dinheiro entrar, antes
+  // dele se misturar com o resto e virar "o saldo". Por isso este só aparece
+  // no comecinho do mês, quando ainda dá para separar sem apertar nada.
+  if (renda > 0 && guardar.total === 0 && fracao <= 0.4 && emContaSuficiente(saldos, renda)) {
+    const sugerido = round2(renda * 0.1);
+    out.push({
+      id: "hora-de-guardar",
+      nivel: "dica",
+      titulo: "Guarde antes de gastar",
+      texto: `Entraram ${formatBRL(renda)} este mês e o dinheiro ainda está inteiro na conta. Separar agora é a parte fácil — daqui a duas semanas ele já virou outra coisa. Mesmo ${formatBRL(sugerido)}, 10% do que entrou, já é começar.`,
+      sugestao: `guarda ${formatBRL(sugerido)} na minha reserva`,
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // 7c. Gastou menos que no mês passado — o parabéns que ninguém dá
+  // -------------------------------------------------------------------
+  const gastoAntes = antes.total_spent;
+  if (gastoAntes > 0 && fracao >= 0.9 && gasto < gastoAntes * 0.9) {
+    const economia = round2(gastoAntes - gasto);
+    out.push({
+      id: "gastou-menos",
+      nivel: "parabens",
+      titulo: `Você gastou ${formatBRL(economia)} a menos`,
+      texto: `Foram ${formatBRL(gasto)} este mês contra ${formatBRL(gastoAntes)} no passado. Isso não aconteceu sozinho — e é dinheiro que agora pode ir para a reserva ou para um sonho.`,
+      sugestao: `guarda ${formatBRL(economia)} na minha reserva`,
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // 7d. O mês acabou e sobrou dinheiro
+  // -------------------------------------------------------------------
+  const sobrouNoMes = round2(renda - gasto - agora.saved);
+  if (renda > 0 && fracao >= 0.9 && sobrouNoMes > 0 && guardar.total > 0) {
+    out.push({
+      id: "fechou-sobrando",
+      nivel: "parabens",
+      titulo: "O mês fechou sobrando",
+      texto: `Entrou mais do que saiu, e ainda foram ${formatBRL(guardar.total)} para o futuro. Sobraram ${formatBRL(sobrouNoMes)} na conta. Mês fechado no azul é o que faz a diferença aparecer daqui a um ano.`,
+      sugestao: `guarda os ${formatBRL(sobrouNoMes)} que sobraram`,
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // 7e. Segurou o lazer em relação ao mês passado
+  // -------------------------------------------------------------------
+  if (lazerAntes > 0 && fracao >= 0.9 && lazer.total < lazerAntes * 0.7) {
+    out.push({
+      id: "lazer-segurou",
+      nivel: "parabens",
+      titulo: "Você segurou o lazer este mês",
+      texto: `${formatBRL(lazer.total)} contra ${formatBRL(lazerAntes)} no mês passado. Cortar no que é escolha, e não no que é obrigação, é exatamente onde dá para mexer.`,
     });
   }
 

@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { safeEqual } from "@/lib/oauth";
 import { getConselhos } from "@/lib/db/conselhos";
+import { aindaPodeFalar, anotarQueFalou } from "@/lib/db/alertas";
 import { mandarRecado } from "@/lib/push";
 
 export const runtime = "nodejs";
@@ -180,13 +181,35 @@ export async function GET(request: Request) {
   for (const [householdId, userId] of dindis) {
     try {
       const conselhos = await getConselhos({ db, householdId, userId });
-      const importante = conselhos.find((c) => c.nivel === "urgente" || c.nivel === "atencao");
-      if (!importante) continue;
+      if (conselhos.length === 0) continue;
 
-      log.recados_enviados += await mandarRecado(householdId, {
-        titulo: importante.titulo,
-        texto: importante.texto,
+      // Tira da mesa o que já foi dito há pouco. Sem isso, "o lazer passou do
+      // ponto" sairia todo dia até o mês virar.
+      const liberados = await aindaPodeFalar(householdId, conselhos);
+      const podeSair = conselhos.filter((c) => liberados.has(c.id));
+      if (podeSair.length === 0) continue;
+
+      /*
+       * Um recado por dia, e a escolha não é só por gravidade.
+       *
+       * Se existe um parabéns na fila, ele passa na frente de uma dica: o
+       * dindi que só aparece para dar notícia ruim vira um app que dá medo de
+       * abrir. Coisa urgente e coisa que ainda dá para corrigir continuam
+       * vindo antes de tudo — já é a ordem em que `getConselhos` devolve.
+       */
+      const urgente = podeSair.find((c) => c.nivel === "urgente" || c.nivel === "atencao");
+      const escolhido =
+        urgente ?? podeSair.find((c) => c.nivel === "parabens") ?? podeSair[0];
+
+      const entregues = await mandarRecado(householdId, {
+        titulo: escolhido.titulo,
+        texto: escolhido.texto,
       });
+
+      if (entregues > 0) {
+        await anotarQueFalou(householdId, escolhido.id);
+        log.recados_enviados += entregues;
+      }
     } catch (err) {
       log.erros.push(`recado ${householdId}: ${(err as Error).message}`);
     }

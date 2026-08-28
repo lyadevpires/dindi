@@ -2,7 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { pageCtx } from "@/lib/ctx";
-import { addTransaction, createAccount, deleteTransaction } from "@/lib/db/finance";
+import {
+  addTransaction,
+  createAccount,
+  createRecurringRule,
+  deactivateRecurringRule,
+  deleteTransaction,
+} from "@/lib/db/finance";
 import { DindiError } from "@/lib/db/types";
 import { formatBRL } from "@/lib/money";
 import type { ActionState } from "@/app/auth/actions";
@@ -26,6 +32,13 @@ export async function lancar(_prev: ActionState, formData: FormData): Promise<Ac
 
   const detalhe = String(formData.get("detalhe") ?? "").trim();
   const tipo = formData.get("tipo") === "income" ? "income" : "expense";
+
+  // Conta fixa: em vez de um lançamento solto, vira uma regra que a rotina
+  // diária repete todo mês sozinha. Sem isto, a única forma de cadastrar
+  // aluguel e luz era pelo Claude — e quem não conectou ficava sem.
+  if (formData.get("repete") === "on") {
+    return await criarFixa(nome, valor, detalhe, tipo, formData);
+  }
 
   try {
     const { ctx } = await pageCtx();
@@ -53,6 +66,56 @@ export async function lancar(_prev: ActionState, formData: FormData): Promise<Ac
     if (e instanceof DindiError) return { error: e.message };
     throw e;
   }
+}
+
+/**
+ * A conta que chega todo mês: aluguel, luz, escola, assinatura.
+ *
+ * Guarda a regra, não o gasto. A rotina diária lança sozinha quando chega o
+ * dia — inclusive o deste mês, se o dia ainda não passou.
+ */
+async function criarFixa(
+  nome: string,
+  valor: number,
+  detalhe: string,
+  tipo: "expense" | "income",
+  formData: FormData
+): Promise<ActionState> {
+  const dia = Number(formData.get("dia") ?? 0);
+  if (!Number.isInteger(dia) || dia < 1 || dia > 31) {
+    return { error: "Diga em que dia do mês isso cai, de 1 a 31." };
+  }
+
+  try {
+    const { ctx } = await pageCtx();
+    const regra = await createRecurringRule(ctx, {
+      description: detalhe || nome,
+      amount: valor,
+      day_of_month: dia,
+      type: tipo,
+      category: nome,
+      account: String(formData.get("conta") ?? "") || undefined,
+    });
+
+    revalidatePath("/", "layout");
+    return {
+      ok: `Anotado: ${formatBRL(regra.amount)} todo dia ${dia}. Eu lanço sozinho daqui pra frente.`,
+    };
+  } catch (e) {
+    if (e instanceof DindiError) return { error: e.message };
+    throw e;
+  }
+}
+
+/** Desliga uma conta fixa — ela para de ser lançada nos próximos meses. */
+export async function pararFixa(formData: FormData): Promise<void> {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const { ctx } = await pageCtx();
+  await deactivateRecurringRule(ctx, id);
+
+  revalidatePath("/", "layout");
 }
 
 /**

@@ -144,6 +144,7 @@ function Formulario({
   const [estado, acao] = useActionState<ActionState, FormData>(lancar, null);
   const [categoria, setCategoria] = useState(categorias[0]?.name ?? "__nova__");
   const [entrada, setEntrada] = useState(false);
+  const [repete, setRepete] = useState(false);
   const form = useRef<HTMLFormElement>(null);
 
   // Depois de anotar, limpa para a próxima sem fechar — quem lança um gasto
@@ -164,7 +165,13 @@ function Formulario({
     <form ref={form} action={acao} className="space-y-4 p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold tracking-tight">
-          {tipo === "income" ? "O que entrou" : "O que saiu"}
+          {repete
+            ? tipo === "income"
+              ? "O que entra todo mês"
+              : "Conta que chega todo mês"
+            : tipo === "income"
+              ? "O que entrou"
+              : "O que saiu"}
         </h2>
         <button
           type="button"
@@ -246,8 +253,46 @@ function Formulario({
         </div>
       ) : null}
 
+      {/*
+        A conta fixa entra por aqui, e não por uma tela separada: para quem
+        anota, "aluguel" é só mais um gasto — a diferença é que ele volta.
+      */}
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-borda bg-areia/40 p-3.5">
+        <input
+          type="checkbox"
+          name="repete"
+          checked={repete}
+          onChange={(e) => setRepete(e.target.checked)}
+          className="mt-0.5 h-5 w-5 shrink-0 accent-tinta"
+        />
+        <span className="min-w-0">
+          <span className="block text-sm font-medium">Isso se repete todo mês</span>
+          <span className="block text-xs text-suave">
+            Aluguel, luz, escola, assinatura. Eu lanço sozinho todo mês.
+          </span>
+        </span>
+      </label>
+
+      {repete ? (
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium">Cai em que dia do mês?</span>
+          <input
+            name="dia"
+            type="number"
+            min={1}
+            max={31}
+            inputMode="numeric"
+            required
+            placeholder="5"
+            className="w-28 rounded-xl border border-borda bg-white px-3.5 py-2.5 text-sm outline-none transition placeholder:text-suave/60 focus:border-tinta"
+          />
+        </label>
+      ) : null}
+
       <details className="text-sm">
-        <summary className="cursor-pointer text-suave">Conta, data e detalhe</summary>
+        <summary className="cursor-pointer text-suave">
+          {repete ? "Conta e detalhe" : "Conta, data e detalhe"}
+        </summary>
         <div className="mt-3 space-y-3">
           <select
             name="conta"
@@ -262,13 +307,15 @@ function Formulario({
             ))}
           </select>
 
-          <input
-            type="date"
-            name="data"
-            defaultValue={hoje}
-            aria-label="Data"
-            className="w-full rounded-xl border border-borda bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-tinta"
-          />
+          {repete ? null : (
+            <input
+              type="date"
+              name="data"
+              defaultValue={hoje}
+              aria-label="Data"
+              className="w-full rounded-xl border border-borda bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-tinta"
+            />
+          )}
 
           <input
             name="detalhe"

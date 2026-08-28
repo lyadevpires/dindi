@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { appUrl } from "@/lib/env";
@@ -37,6 +38,44 @@ export async function signIn(_prev: ActionState, formData: FormData): Promise<Ac
   redirect(next);
 }
 
+/**
+ * Freio de mão do cadastro.
+ *
+ * O cadastro é aberto e não tem captcha, então um script conseguiria criar
+ * milhares de contas numa tarde e estourar o plano do banco. Isto limita por
+ * endereço de internet: seis contas por hora resolve o abuso e nunca atrapalha
+ * gente de verdade, nem várias pessoas saindo do mesmo wi-fi.
+ *
+ * A memória é do processo, não do banco: some quando o servidor troca. Serve
+ * para atrapalhar script, não para ser à prova de bala — quem quiser mesmo
+ * pode trocar de endereço. O passo seguinte, se virar problema, é captcha.
+ */
+const cadastrosRecentes = new Map<string, number[]>();
+const TETO_POR_HORA = 6;
+
+function podeCadastrar(ip: string): boolean {
+  const agora = Date.now();
+  const umaHoraAtras = agora - 60 * 60 * 1000;
+  const anteriores = (cadastrosRecentes.get(ip) ?? []).filter((t) => t > umaHoraAtras);
+
+  if (anteriores.length >= TETO_POR_HORA) {
+    cadastrosRecentes.set(ip, anteriores);
+    return false;
+  }
+
+  anteriores.push(agora);
+  cadastrosRecentes.set(ip, anteriores);
+
+  // Faxina preguiçosa, para o mapa não crescer para sempre.
+  if (cadastrosRecentes.size > 5000) {
+    for (const [chave, marcas] of cadastrosRecentes) {
+      if (marcas.every((t) => t <= umaHoraAtras)) cadastrosRecentes.delete(chave);
+    }
+  }
+
+  return true;
+}
+
 export async function signUp(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
@@ -44,6 +83,12 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
 
   if (!email || !password) return { error: "Preencha email e senha." };
   if (password.length < 8) return { error: "A senha precisa ter pelo menos 8 caracteres." };
+
+  const cabecalhos = await headers();
+  const ip = (cabecalhos.get("x-forwarded-for") ?? "desconhecido").split(",")[0].trim();
+  if (!podeCadastrar(ip)) {
+    return { error: "Muitas contas criadas daí em pouco tempo. Tente de novo daqui a pouco." };
+  }
 
   // A conta nasce já confirmada, em vez de depender do email de confirmação
   // do Supabase — que não temos como configurar (a integração fica trancada
