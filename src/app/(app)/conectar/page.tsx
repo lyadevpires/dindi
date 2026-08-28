@@ -1,5 +1,6 @@
 import { Card, SectionTitle } from "@/components/ui";
 import { Dindi } from "@/components/dindi";
+import { CopiarEndereco } from "@/components/copiar";
 import { appUrl } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ const PASSOS = [
   },
   {
     titulo: "Cole o endereço do dindi",
-    texto: "É o endereço que está ali em cima. Dê o nome de “dindi” para ele.",
+    texto: "Use o botão Copiar ali em cima. Dê o nome de “dindi” para ele.",
   },
   {
     titulo: "Clique em Permitir",
@@ -50,12 +51,8 @@ export default async function Conectar() {
       </div>
 
       <Card className="mb-6">
-        <p className="text-xs uppercase tracking-wide text-suave">
-          Endereço do dindi (copie tudo)
-        </p>
-        <p className="mt-2 select-all break-all rounded-lg bg-areia px-3 py-2 font-mono text-sm">
-          {url}
-        </p>
+        <p className="text-xs uppercase tracking-wide text-suave">Endereço do dindi</p>
+        <CopiarEndereco url={url} />
       </Card>
 
       <SectionTitle>Passo a passo</SectionTitle>

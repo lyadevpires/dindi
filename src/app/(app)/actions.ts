@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { pageCtx } from "@/lib/ctx";
-import { addTransaction, createAccount } from "@/lib/db/finance";
+import { addTransaction, createAccount, deleteTransaction } from "@/lib/db/finance";
 import { DindiError } from "@/lib/db/types";
 import { formatBRL } from "@/lib/money";
 import type { ActionState } from "@/app/auth/actions";
@@ -53,6 +53,54 @@ export async function lancar(_prev: ActionState, formData: FormData): Promise<Ac
     if (e instanceof DindiError) return { error: e.message };
     throw e;
   }
+}
+
+/**
+ * Apagar um lançamento errado.
+ *
+ * Todo mundo digita o valor errado uma vez. Sem isto, o único jeito de
+ * consertar era pedir pro Claude — e quem ainda não conectou ficava com o
+ * erro no extrato para sempre.
+ */
+export async function apagarLancamento(formData: FormData): Promise<void> {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const { ctx } = await pageCtx();
+  await deleteTransaction(ctx, id);
+
+  revalidatePath("/", "layout");
+}
+
+/**
+ * Apagar uma conta.
+ *
+ * Só sai se estiver vazia. Apagar uma conta com lançamentos dentro faria o
+ * extrato mentir sobre meses que já passaram — nesse caso a pessoa apaga os
+ * lançamentos primeiro, e aí ela sabe o que está jogando fora.
+ */
+export async function apagarConta(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Não sei qual conta apagar." };
+
+  const { ctx } = await pageCtx();
+
+  const { count } = await ctx.db
+    .from("transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("account_id", id);
+
+  if ((count ?? 0) > 0) {
+    return {
+      error: `Essa conta tem ${count} lançamento${count === 1 ? "" : "s"}. Apague eles no extrato primeiro.`,
+    };
+  }
+
+  const { error } = await ctx.db.from("accounts").delete().eq("id", id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return { ok: "Conta apagada." };
 }
 
 /**

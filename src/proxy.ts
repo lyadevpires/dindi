@@ -33,7 +33,16 @@ export async function proxy(request: NextRequest) {
   // e segurava a troca de tela. `getSession()` lê o cookie na hora e só sai para
   // a rede se o token já venceu. Não é uma brecha: quem decide se você está
   // logado de verdade continua sendo o `getUser()` de dentro de cada página.
-  await supabase.auth.getSession();
+  const { data } = await supabase.auth.getSession();
+
+  // Quem abre o site sem estar logado vê a apresentação, não o formulário de
+  // entrar. É `rewrite` e não `redirect` de propósito: o endereço continua
+  // sendo dindi.vercel.app, que é o que se manda para alguém.
+  if (!data.session && request.nextUrl.pathname === "/") {
+    const apresentacao = request.nextUrl.clone();
+    apresentacao.pathname = "/oi";
+    return NextResponse.rewrite(apresentacao);
+  }
 
   return response;
 }

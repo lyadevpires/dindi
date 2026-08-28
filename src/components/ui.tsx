@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 /** Peças visuais reutilizadas em todas as telas. */
 
@@ -33,10 +34,30 @@ export function SectionTitle({
   );
 }
 
-export function Empty({ children }: { children: ReactNode }) {
+/**
+ * A tela vazia.
+ *
+ * Quase todo vazio aqui termina em "peça pro Claude" — e isso é um beco sem
+ * saída para quem ainda não conectou. Por isso o caminho vem junto, a não ser
+ * que a própria tela já esteja oferecendo ele (`semLink`).
+ */
+export function Empty({
+  children,
+  semLink = false,
+}: {
+  children: ReactNode;
+  semLink?: boolean;
+}) {
   return (
     <div className="rounded-xl border border-dashed border-borda bg-areia/40 px-4 py-8 text-center text-sm text-suave">
       {children}
+      {semLink ? null : (
+        <p className="mt-3">
+          <Link href="/conectar" className="underline underline-offset-2">
+            Conectar o Claude
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

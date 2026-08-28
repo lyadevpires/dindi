@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, Empty, Pill, SectionTitle } from "@/components/ui";
 import { ConviteBotao } from "@/components/convite";
+import { ApagarConta } from "@/components/apagar";
 import { ActionForm, Field } from "@/components/auth-form";
 import { Avisos } from "@/components/avisos";
 import { updatePassword } from "@/app/auth/actions";
@@ -149,6 +150,7 @@ export default async function Ajustes() {
                         : ""}
                     </p>
                   </div>
+                  <ApagarConta id={c.id} nome={c.name} />
                 </li>
               ))}
             </ul>
@@ -204,13 +206,7 @@ export default async function Ajustes() {
         </SectionTitle>
 
         {conexoes.size === 0 ? (
-          <Empty>
-            Nenhum app conectado ainda.{" "}
-            <Link href="/conectar" className="underline underline-offset-2">
-              Conectar o Claude
-            </Link>
-            .
-          </Empty>
+          <Empty>Nenhum app conectado ainda.</Empty>
         ) : (
           <Card className="p-0">
             <ul className="divide-y divide-borda">

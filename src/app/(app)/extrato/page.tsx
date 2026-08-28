@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card, Empty, SectionTitle } from "@/components/ui";
+import { FormApagarLancamento } from "@/components/apagar";
 import { pageCtx } from "@/lib/ctx";
 import { listTransactions } from "@/lib/db/finance";
 import { formatBRL } from "@/lib/money";
@@ -98,12 +99,15 @@ export default async function Extrato(props: PageProps<"/extrato">) {
                           {t.installment ? ` · ${t.installment}` : ""}
                         </p>
                       </div>
-                      <span
-                        className={`tabular shrink-0 font-semibold ${
-                          t.type === "income" ? "text-verdinho" : ""
-                        }`}
-                      >
-                        {t.type === "income" ? "+" : "−"} {formatBRL(t.amount)}
+                      <span className="flex shrink-0 items-center gap-1">
+                        <span
+                          className={`tabular font-semibold ${
+                            t.type === "income" ? "text-verdinho" : ""
+                          }`}
+                        >
+                          {t.type === "income" ? "+" : "−"} {formatBRL(t.amount)}
+                        </span>
+                        <FormApagarLancamento id={t.id} descricao={t.description} />
                       </span>
                     </li>
                   ))}

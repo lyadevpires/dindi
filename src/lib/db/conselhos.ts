@@ -86,6 +86,17 @@ export async function getConselhos(ctx: Ctx, month?: string): Promise<Conselho[]
 export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
   const { mes, agora, antes, saldos, metas, orcamento, reservaIdeal } = retrato;
 
+  /*
+   * Quanto custa viver, mas só quando dá para afirmar isso.
+   *
+   * O mês corrente está sempre pela metade, então com um único mês de dados a
+   * média não significa nada: uma compra de 45 reais virava "você gasta 45 por
+   * mês, junte 275". Abaixo de dois meses o dindi prefere não chutar — existe
+   * um conselho genérico logo abaixo para esse caso.
+   */
+  const custoDeVida =
+    reservaIdeal && reservaIdeal.months_of_data >= 2 ? reservaIdeal : null;
+
   const grupo = (b: "fixo" | "dia_a_dia" | "lazer" | "guardar") =>
     agora.groups.find((g) => g.bucket === b)!;
 
@@ -185,13 +196,13 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
   // -------------------------------------------------------------------
   const reserva = metas.find((m) => m.kind === "emergencia");
 
-  if (!reserva && reservaIdeal) {
+  if (!reserva && custoDeVida) {
     out.push({
       id: "sem-reserva",
       nivel: "dica",
       titulo: "Ainda não existe uma reserva de emergência",
-      texto: `Reserva de emergência é o dinheiro que impede que um pneu furado ou um dente quebrado vire dívida no cartão. Pelo que você gasta para viver (${formatBRL(reservaIdeal.monthly_cost)} por mês), o ideal é chegar em ${formatBRL(reservaIdeal.ideal)} — seis meses parados. Começar por ${formatBRL(reservaIdeal.minimum)} já resolve a maioria dos sustos.`,
-      sugestao: `cria minha reserva de emergência de ${formatBRL(reservaIdeal.ideal)}`,
+      texto: `Reserva de emergência é o dinheiro que impede que um pneu furado ou um dente quebrado vire dívida no cartão. Pelo que você gasta para viver (${formatBRL(custoDeVida.monthly_cost)} por mês), o ideal é chegar em ${formatBRL(custoDeVida.ideal)} — seis meses parados. Começar por ${formatBRL(custoDeVida.minimum)} já resolve a maioria dos sustos.`,
+      sugestao: `cria minha reserva de emergência de ${formatBRL(custoDeVida.ideal)}`,
     });
   } else if (!reserva) {
     out.push({
@@ -201,13 +212,13 @@ export function montarConselhos(retrato: RetratoDoMes): Conselho[] {
       texto: "Antes de qualquer sonho, vem o colchão: um dinheiro parado que cobre uns meses de vida se a renda sumir. Assim um imprevisto não vira dívida. Me conta quanto você gasta por mês que eu calculo o tamanho certo.",
       sugestao: "me ajuda a montar minha reserva de emergência",
     });
-  } else if (reserva.percent < 100 && reservaIdeal && reserva.target_amount < reservaIdeal.minimum) {
+  } else if (reserva.percent < 100 && custoDeVida && reserva.target_amount < custoDeVida.minimum) {
     out.push({
       id: "reserva-pequena",
       nivel: "dica",
       titulo: "A reserva está menor do que deveria",
-      texto: `A reserva mira ${formatBRL(reserva.target_amount)}, mas viver custa ${formatBRL(reservaIdeal.monthly_cost)} por mês. O mínimo saudável seria ${formatBRL(reservaIdeal.minimum)} — três meses de tranquilidade.`,
-      sugestao: `aumenta minha reserva para ${formatBRL(reservaIdeal.minimum)}`,
+      texto: `A reserva mira ${formatBRL(reserva.target_amount)}, mas viver custa ${formatBRL(custoDeVida.monthly_cost)} por mês. O mínimo saudável seria ${formatBRL(custoDeVida.minimum)} — três meses de tranquilidade.`,
+      sugestao: `aumenta minha reserva para ${formatBRL(custoDeVida.minimum)}`,
     });
   } else if (reserva.percent >= 100) {
     out.push({

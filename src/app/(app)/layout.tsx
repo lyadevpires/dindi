@@ -1,5 +1,6 @@
 import { Shell } from "@/components/shell";
 import { BotaoLancar } from "@/components/lancar";
+import { AvisoConectar } from "@/components/aviso-conectar";
 import { signOut } from "@/app/auth/actions";
 import { pageCtx } from "@/lib/ctx";
 import { listAccounts, listCategories } from "@/lib/db/finance";
@@ -16,12 +17,22 @@ import { today } from "@/lib/dates";
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { session, ctx } = await pageCtx();
-  const [contas, categorias] = await Promise.all([listAccounts(ctx), listCategories(ctx)]);
+  const [contas, categorias, conexoes] = await Promise.all([
+    listAccounts(ctx),
+    listCategories(ctx),
+    ctx.db
+      .from("oauth_tokens")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", session.userId)
+      .eq("token_type", "access")
+      .eq("revoked", false),
+  ]);
 
   return (
     <Shell
       displayName={session.displayName}
       householdName={session.householdName}
+      aviso={(conexoes.count ?? 0) > 0 ? null : <AvisoConectar />}
       sair={
         <form action={signOut}>
           <button

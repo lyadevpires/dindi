@@ -25,11 +25,13 @@ export function Shell({
   displayName,
   householdName,
   sair,
+  aviso,
   children,
 }: {
   displayName: string;
   householdName: string;
   sair: React.ReactNode;
+  aviso?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -72,7 +74,11 @@ export function Shell({
         </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-6">{children}</main>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-6">
+        {/* Na própria tela de conectar o lembrete seria piada. */}
+        {pathname === "/conectar" ? null : aviso}
+        {children}
+      </main>
 
       {/* O pb extra é o espaço do botão de anotar, que flutua por cima. */}
       <footer className="mx-auto w-full max-w-5xl px-5 pb-28 pt-8 text-center text-xs text-suave">
