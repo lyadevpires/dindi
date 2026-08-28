@@ -3,6 +3,8 @@ import { Dindi } from "@/components/dindi";
 import { Card, Empty, Progress, SectionTitle } from "@/components/ui";
 import { Conselhos } from "@/components/conselhos";
 import { Grupos } from "@/components/grupos";
+import { Anel } from "@/components/anel";
+import { calcularSaude } from "@/lib/db/saude";
 import {
   EntrouSaiu,
   GastoVsCombinado,
@@ -28,6 +30,7 @@ export default async function Home() {
 
   const { metas, saldos, orcamento, agora: grupos } = retrato;
   const conselhos = montarConselhos(retrato);
+  const saude = calcularSaude(retrato);
 
   const semNada = saldos.accounts.length === 0 && extrato.count === 0 && metas.length === 0;
   const reserva = metas.find((m) => m.kind === "emergencia");
@@ -44,6 +47,29 @@ export default async function Home() {
   return (
     <>
       {semNada ? <PrimeiroDia nome={session.displayName} /> : null}
+
+      {/* ---------------- A nota, resumida ---------------- */}
+      {saude.nota === null ? null : (
+        <Link
+          href="/saude"
+          className="mb-3 flex items-center gap-4 rounded-3xl border border-borda bg-white p-5 shadow-[0_1px_2px_rgba(44,36,32,0.04)] transition hover:bg-areia/30"
+        >
+          <Anel pilares={saude.pilares} nota={saude.nota} tamanho={92} />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">Saúde do seu dinheiro</p>
+            <p className="justo mt-0.5 text-sm leading-relaxed text-suave">
+              {saude.nota >= 8
+                ? "Está indo bem. Toque para ver o que sustenta essa nota."
+                : saude.nota >= 5
+                  ? "Dá para melhorar. Toque para ver o que está puxando para baixo."
+                  : "Tem coisa pedindo atenção. Toque para ver o quê."}
+            </p>
+          </div>
+          <span aria-hidden className="shrink-0 text-suave">
+            →
+          </span>
+        </Link>
+      )}
 
       {/* ---------------- O retrato da conta ---------------- */}
       <Saldo
