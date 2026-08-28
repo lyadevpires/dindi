@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { pageCtx } from "@/lib/ctx";
 import {
+  addParcelado,
   addTransaction,
   createAccount,
   createRecurringRule,
@@ -38,6 +39,13 @@ export async function lancar(_prev: ActionState, formData: FormData): Promise<Ac
   // aluguel e luz era pelo Claude — e quem não conectou ficava sem.
   if (formData.get("repete") === "on") {
     return await criarFixa(nome, valor, detalhe, tipo, formData);
+  }
+
+  // Parcelado: o valor digitado é o total da compra, e ele se espalha pelos
+  // meses. Vale para o cartão e para o carnê — a diferença é só onde cai.
+  const vezes = Number(formData.get("vezes") ?? 1);
+  if (vezes > 1) {
+    return await criarParcelado(nome, valor, detalhe, vezes, formData);
   }
 
   try {
@@ -100,6 +108,46 @@ async function criarFixa(
     revalidatePath("/", "layout");
     return {
       ok: `Anotado: ${formatBRL(regra.amount)} todo dia ${dia}. Eu lanço sozinho daqui pra frente.`,
+    };
+  } catch (e) {
+    if (e instanceof DindiError) return { error: e.message };
+    throw e;
+  }
+}
+
+/**
+ * Uma compra em N vezes.
+ *
+ * O valor que a pessoa digita é o total — é o que ela vê na etiqueta e o que
+ * ela lembra. Quem divide é o dindi, sem perder centavo.
+ */
+async function criarParcelado(
+  nome: string,
+  total: number,
+  detalhe: string,
+  vezes: number,
+  formData: FormData
+): Promise<ActionState> {
+  if (!Number.isInteger(vezes) || vezes < 2 || vezes > 72) {
+    return { error: "O número de parcelas precisa ser entre 2 e 72." };
+  }
+
+  try {
+    const { ctx } = await pageCtx();
+    const compra = await addParcelado(ctx, {
+      description: detalhe || nome,
+      total_amount: total,
+      installments: vezes,
+      account: String(formData.get("conta") ?? "") || undefined,
+      category: nome,
+      purchase_date: String(formData.get("data") ?? "") || undefined,
+    });
+
+    revalidatePath("/", "layout");
+    return {
+      ok: `Anotado: ${formatBRL(compra.total_amount)} em ${vezes}x de ${formatBRL(compra.installment_amount)}${
+        compra.no_cartao ? ` na fatura do ${compra.card}` : ` pela ${compra.card}`
+      }.`,
     };
   } catch (e) {
     if (e instanceof DindiError) return { error: e.message };

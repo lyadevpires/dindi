@@ -148,6 +148,7 @@ function Formulario({
   const [categoria, setCategoria] = useState(categorias[0]?.name ?? "__nova__");
   const [entrada, setEntrada] = useState(false);
   const [repete, setRepete] = useState(false);
+  const [parcelado, setParcelado] = useState(false);
   const form = useRef<HTMLFormElement>(null);
 
   // Depois de anotar, limpa para a próxima sem fechar — quem lança um gasto
@@ -172,9 +173,11 @@ function Formulario({
             ? tipo === "income"
               ? "O que entra todo mês"
               : "Conta que chega todo mês"
-            : tipo === "income"
-              ? "O que entrou"
-              : "O que saiu"}
+            : parcelado
+              ? "Compra parcelada"
+              : tipo === "income"
+                ? "O que entrou"
+                : "O que saiu"}
         </h2>
         <button
           type="button"
@@ -275,6 +278,43 @@ function Formulario({
           </span>
         </span>
       </label>
+
+      {/*
+        Parcelado e fixo são coisas diferentes e não se misturam: parcela
+        acaba, conta fixa não. Marcar um esconde o outro.
+      */}
+      {repete || tipo === "income" ? null : (
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-borda bg-areia/40 p-3.5">
+          <input
+            type="checkbox"
+            checked={parcelado}
+            onChange={(e) => setParcelado(e.target.checked)}
+            className="mt-0.5 h-5 w-5 shrink-0 accent-tinta"
+          />
+          <span className="min-w-0">
+            <span className="block text-sm font-medium">Foi parcelado</span>
+            <span className="block text-xs text-suave">
+              Cartão ou carnê. Escreva o valor total lá em cima.
+            </span>
+          </span>
+        </label>
+      )}
+
+      {parcelado && !repete && tipo !== "income" ? (
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium">Em quantas vezes?</span>
+          <input
+            name="vezes"
+            type="number"
+            min={2}
+            max={72}
+            inputMode="numeric"
+            required
+            placeholder="10"
+            className="w-28 rounded-xl border border-borda bg-white px-3.5 py-2.5 text-sm outline-none transition placeholder:text-suave/60 focus:border-tinta"
+          />
+        </label>
+      ) : null}
 
       {repete ? (
         <label className="block">

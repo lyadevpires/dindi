@@ -634,13 +634,30 @@ export async function deactivateRecurringRule(ctx: Ctx, id: string) {
 // Cartão de crédito
 // =====================================================================
 
-export async function addCreditCardPurchase(
+/**
+ * Uma compra dividida em parcelas — no cartão ou no carnê.
+ *
+ * Os dois casos são a mesma coisa vista de longe: um valor que se espalha por
+ * N meses e tem fim. A diferença é onde cada parcela cai. No cartão ela cai
+ * numa fatura, que fecha num dia e vence noutro; no carnê ela sai direto da
+ * conta, no mês. Por isso a mesma função atende os dois, e só o `invoice_month`
+ * muda.
+ *
+ * Parcelamento não é conta fixa de propósito: conta fixa não acaba, parcela
+ * acaba — e saber quando ela acaba é o que permite dizer "em março sobram
+ * R$ 240 por mês no seu bolso".
+ *
+ * (A tabela se chama `credit_card_purchases` por história, como `households`.
+ * Para o carnê, `first_invoice_month` é só o mês da primeira parcela.)
+ */
+export async function addParcelado(
   ctx: Ctx,
   input: {
     description: string;
     total_amount: number;
     installments: number;
     card?: string;
+    account?: string;
     category?: string;
     person?: string;
     purchase_date?: string;
@@ -649,13 +666,22 @@ export async function addCreditCardPurchase(
   if (!(input.total_amount > 0)) throw new DindiError("O valor precisa ser maior que zero.");
   if (input.installments < 1) throw new DindiError("O número de parcelas precisa ser 1 ou mais.");
 
-  const card = await resolveAccount(ctx, input.card, { type: "credit_card", required: true })!;
-  if (!card) throw new DindiError("Preciso saber em qual cartão foi a compra.");
+  const card = await resolveAccount(ctx, input.card ?? input.account, { required: true })!;
+  if (!card) throw new DindiError("Preciso saber em qual conta ou cartão foi a compra.");
+
+  const noCartao = card.type === "credit_card";
+  if (noCartao && !card.closing_day) {
+    throw new DindiError(
+      `Não sei o dia de fechamento do ${card.name}. Me conta que dia ele fecha e que dia vence.`
+    );
+  }
 
   const category = await resolveCategory(ctx, input.category, { createIfMissing: true });
   const person = await resolvePerson(ctx, input.person);
   const purchaseDate = input.purchase_date ?? today();
-  const firstInvoiceMonth = invoiceMonthFor(purchaseDate, card.closing_day!);
+  const firstInvoiceMonth = noCartao
+    ? invoiceMonthFor(purchaseDate, card.closing_day!)
+    : monthStart(purchaseDate);
 
   const { data: purchase, error: pErr } = await ctx.db
     .from("credit_card_purchases")
@@ -689,7 +715,8 @@ export async function addCreditCardPurchase(
     paid_by_user_id: person,
     purchase_id: purchase.id,
     installment_number: i + 1,
-    invoice_month: addMonths(firstInvoiceMonth, i),
+    // No carnê não existe fatura: a parcela sai da conta no próprio mês.
+    invoice_month: noCartao ? addMonths(firstInvoiceMonth, i) : null,
   }));
 
   const { error: tErr } = await ctx.db.from("transactions").insert(rows);
@@ -699,12 +726,67 @@ export async function addCreditCardPurchase(
     purchase_id: purchase.id,
     description: input.description,
     card: card.name,
+    no_cartao: noCartao,
     total_amount: round2(input.total_amount),
     installments: input.installments,
     installment_amount: values[0],
     first_invoice_month: firstInvoiceMonth,
     last_invoice_month: addMonths(firstInvoiceMonth, input.installments - 1),
     category: category?.name ?? null,
+  };
+}
+
+/** Nome antigo, mantido para o MCP não quebrar. */
+export const addCreditCardPurchase = addParcelado;
+
+/**
+ * O que já está comprometido nos próximos meses.
+ *
+ * Com dois parcelamentos e um carnê, o mês que vem nasce devendo antes de a
+ * pessoa gastar um real — e isso não aparece em lugar nenhum, porque cada
+ * parcela sozinha é pequena. Aqui elas são somadas mês a mês.
+ */
+export async function parcelasEmAberto(ctx: Ctx, meses = 6) {
+  const inicio = monthStart(today());
+  const fim = addMonths(inicio, meses);
+
+  const [accounts, categories] = await Promise.all([allAccounts(ctx), allCategories(ctx)]);
+  const accName = new Map(accounts.map((a) => [a.id, a.name]));
+  const catName = new Map(categories.map((c) => [c.id, c.name]));
+
+  const { data, error } = await ctx.db
+    .from("transactions")
+    .select("id, date, amount, description, account_id, category_id, purchase_id, installment_number")
+    .eq("household_id", ctx.householdId)
+    .eq("type", "expense")
+    .not("purchase_id", "is", null)
+    .gte("date", inicio)
+    .lt("date", fim)
+    .order("date");
+  if (error) throw new DindiError(error.message);
+
+  const linhas = (data ?? []).map((t) => ({
+    id: t.id,
+    date: t.date as string,
+    amount: num(t.amount),
+    description: t.description as string,
+    account: accName.get(t.account_id) ?? "?",
+    category: t.category_id ? catName.get(t.category_id) ?? null : null,
+    purchase_id: t.purchase_id as string,
+    installment_number: (t.installment_number as number) ?? 1,
+  }));
+
+  // Somado por mês, para responder "quanto do mês que vem já está gasto?".
+  const porMes = new Map<string, number>();
+  for (const l of linhas) {
+    const mes = monthStart(l.date);
+    porMes.set(mes, round2((porMes.get(mes) ?? 0) + l.amount));
+  }
+
+  return {
+    total: round2(linhas.reduce((s, l) => s + l.amount, 0)),
+    parcelas: linhas,
+    por_mes: [...porMes.entries()].map(([month, total]) => ({ month, total })),
   };
 }
 
