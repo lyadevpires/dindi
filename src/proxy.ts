@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { cookieLongo } from "@/lib/supabase/cookies";
 
 /**
  * Roda antes de cada página e mantém o login do Supabase renovado.
@@ -21,7 +22,7 @@ export async function proxy(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options)
+          response.cookies.set(name, value, cookieLongo(value, options))
         );
       },
     },
