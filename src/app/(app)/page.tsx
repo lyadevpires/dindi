@@ -248,25 +248,25 @@ export default async function Home() {
   );
 }
 
-/** Boas-vindas de quem acabou de criar o dindi e ainda não tem nada. */
+/**
+ * Boas-vindas de quem acabou de criar o dindi e ainda não tem nada.
+ *
+ * Sem botão de conectar: o aviso que fica logo acima já é esse convite, e
+ * pedir a mesma coisa duas vezes na mesma tela confunde mais do que ajuda.
+ */
 function PrimeiroDia({ nome }: { nome: string }) {
   return (
     <Card className="mb-8 bg-areia/50">
       <div className="flex items-start gap-4">
-        <Dindi size={52} humor="feliz" />
+        <Dindi size={52} humor="feliz" className="shrink-0" />
         <div>
           <h1 className="text-xl font-bold tracking-tight">Oi, {nome}!</h1>
           <p className="mt-1 text-sm text-suave">
             Aqui você vê para onde vai o seu dinheiro. Dá para anotar no botão{" "}
             <strong className="font-medium text-tinta">+</strong> ali embaixo, mas o jeito
-            bom mesmo é conectar o Claude e só falar: <em>&ldquo;gastei 45 no mercado&rdquo;</em>.
+            bom mesmo é conectar o Claude e só falar:{" "}
+            <em>&ldquo;gastei 45 no mercado&rdquo;</em>.
           </p>
-          <Link
-            href="/conectar"
-            className="mt-3 inline-block rounded-lg bg-tinta px-3.5 py-2 text-sm font-medium text-creme transition hover:opacity-90"
-          >
-            Conectar o Claude
-          </Link>
         </div>
       </div>
     </Card>
