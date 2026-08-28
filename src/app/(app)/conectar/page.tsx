@@ -15,7 +15,7 @@ const PASSOS = [
   },
   {
     titulo: "Cole o endereço do dindi",
-    texto: "É o endereço logo abaixo. Dê o nome de “dindi” para ele.",
+    texto: "É o endereço que está ali em cima. Dê o nome de “dindi” para ele.",
   },
   {
     titulo: "Clique em Permitir",
@@ -28,7 +28,7 @@ const EXEMPLOS = [
   "gastei 45 no mercado hoje",
   "comprei uma cadeira de 900 reais em 6x no cartão",
   "recebi meu salário",
-  "quanto a gente gastou com comida esse mês?",
+  "quanto eu gastei com comida esse mês?",
   "guardei 500 na reserva de emergência",
   "paguei a fatura do Nubank",
   "dá pra viajar em dezembro?",

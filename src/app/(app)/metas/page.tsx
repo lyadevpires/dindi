@@ -28,7 +28,7 @@ export default async function Metas() {
 
   return (
     <>
-      <SectionTitle>Nossos sonhos</SectionTitle>
+      <SectionTitle>Seus sonhos</SectionTitle>
 
       {metas.length === 0 ? (
         <Empty>

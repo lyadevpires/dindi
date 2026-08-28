@@ -37,7 +37,7 @@ export default async function Home() {
       {/* ---------------- Reserva de emergência ---------------- */}
       {reserva ? (
         <section className="mb-8">
-          <SectionTitle>Nosso colchão</SectionTitle>
+          <SectionTitle>Seu colchão</SectionTitle>
           <Card>
             <div className="mb-2 flex items-baseline justify-between gap-2">
               <h3 className="font-semibold">{reserva.name}</h3>
@@ -69,7 +69,7 @@ export default async function Home() {
             </Link>
           }
         >
-          Nossos sonhos
+          Seus sonhos
         </SectionTitle>
 
         {sonhos.length === 0 ? (
@@ -257,8 +257,9 @@ function PrimeiroDia({ nome }: { nome: string }) {
         <div>
           <h1 className="text-xl font-bold tracking-tight">Oi, {nome}!</h1>
           <p className="mt-1 text-sm text-suave">
-            Este site é só a vitrine — quem anota tudo é o Claude. Conecte o dindi lá e
-            comece dizendo suas contas e seus gastos com palavras normais.
+            Aqui você vê para onde vai o seu dinheiro. Dá para anotar no botão{" "}
+            <strong className="font-medium text-tinta">+</strong> ali embaixo, mas o jeito
+            bom mesmo é conectar o Claude e só falar: <em>&ldquo;gastei 45 no mercado&rdquo;</em>.
           </p>
           <Link
             href="/conectar"
