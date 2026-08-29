@@ -59,7 +59,7 @@ export function Conselhos({ itens }: { itens: Conselho[] }) {
           return (
             <div key={c.id} className={`rounded-2xl border ${e.borda} ${e.fundo} p-5`}>
               <div className="flex items-start gap-3">
-                <Dindi size={56} humor={HUMOR[c.nivel]} enquadramento="rosto" className="mt-1 shrink-0" />
+                <Dindi size={56} humor={HUMOR[c.nivel]} className="mt-1 shrink-0" />
                 <div className="min-w-0">
                   <p className={`text-xs font-semibold uppercase tracking-wide ${e.texto}`}>
                     {e.etiqueta}

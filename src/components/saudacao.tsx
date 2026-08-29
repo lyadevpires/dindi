@@ -58,7 +58,7 @@ export function Saudacao({
 
   return (
     <section className="mb-5 flex items-center gap-3">
-      <Dindi size={76} humor={humor} enquadramento="rosto" className="balancinho shrink-0" />
+      <Dindi size={76} humor={humor} className="balancinho shrink-0" />
       <div className="min-w-0">
         <p className="text-sm text-suave">{parte},</p>
         <h1 className="truncate text-xl font-bold tracking-tight">{nome}</h1>

@@ -15,29 +15,12 @@ const BOCHECHA = "#F3B9AE";
 const FOCINHO = "#EE9E9E";
 const TRACO = "#1C1917";
 
-/**
- * O enquadramento — que "foto" do porquinho aparece.
- *
- * É o mesmo desenho sempre; o que muda é onde a câmera corta. Repetir o
- * boneco inteiro em toda tela deixava tudo com cara de figurinha colada, e
- * quatro iguais na mesma página viram papel de parede. Cortando no rosto ele
- * vira retrato, e o olho lê como outro elemento.
- */
-export type Enquadramento = "inteiro" | "rosto";
-
-const CAIXA: Record<Enquadramento, { view: string; proporcao: number }> = {
-  inteiro: { view: "0 0 96 96", proporcao: 1 },
-  // Só a cabeça e as orelhas — corta logo abaixo do focinho.
-  rosto: { view: "8 3 80 56", proporcao: 56 / 80 },
-};
-
 export function Dindi({
   size = 40,
   humor = "feliz",
   className,
   vivo = true,
   acena = false,
-  enquadramento = "inteiro",
   espelhado = false,
 }: {
   size?: number;
@@ -47,13 +30,10 @@ export function Dindi({
   vivo?: boolean;
   /** Acena com o bracinho — para quando ele está chamando para alguma coisa. */
   acena?: boolean;
-  /** Corpo inteiro ou só o rosto. */
-  enquadramento?: Enquadramento;
   /** Vira o desenho de lado, para dois porquinhos vizinhos não ficarem gêmeos. */
   espelhado?: boolean;
 }) {
   const dormindo = humor === "dormindo";
-  const caixa = CAIXA[enquadramento];
 
   // Quem dorme não pisca nem abana o rabo.
   const vida = [
@@ -68,8 +48,8 @@ export function Dindi({
   return (
     <svg
       width={size}
-      height={Math.round(size * caixa.proporcao)}
-      viewBox={caixa.view}
+      height={size}
+      viewBox="0 0 96 96"
       fill="none"
       role="img"
       aria-label="dindi, o porquinho"

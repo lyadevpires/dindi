@@ -15,7 +15,7 @@ export function AvisoConectar() {
       href="/conectar"
       className="mb-6 flex items-center gap-3 rounded-2xl border border-azulzinho/30 bg-azulzinho-claro p-4 transition hover:brightness-[0.98]"
     >
-      <Dindi size={56} humor="atento" acena espelhado enquadramento="rosto" className="shrink-0" />
+      <Dindi size={56} humor="atento" acena espelhado className="shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold">O Claude ainda não está conectado</p>
         <p className="mt-0.5 text-sm text-suave">
