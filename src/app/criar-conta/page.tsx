@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ActionForm, Field } from "@/components/auth-form";
-import { Dindi, Logo } from "@/components/dindi";
-import { signUp } from "@/app/auth/actions";
+import { CriarContaForm } from "@/components/criar-conta-form";
+import { Logo } from "@/components/dindi";
 import { getUser } from "@/lib/auth";
 
 export const metadata = { title: "Criar conta — dindi" };
@@ -24,21 +23,7 @@ export default async function CriarContaPage(props: PageProps<"/criar-conta">) {
       </div>
 
       <div className="rounded-2xl border border-borda bg-white p-6">
-        <ActionForm
-          action={signUp}
-          submitLabel="Criar minha conta"
-          hidden={{ next }}
-          aoConcluir={(email) => <ConfiraOEmail email={email} />}
-        >
-          <Field label="Email" name="email" type="email" autoComplete="email" />
-          <Field
-            label="Senha"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            hint="Pelo menos 8 caracteres."
-          />
-        </ActionForm>
+        <CriarContaForm next={next} />
       </div>
 
       <p className="mt-5 text-center text-sm text-suave">
@@ -51,28 +36,5 @@ export default async function CriarContaPage(props: PageProps<"/criar-conta">) {
         </Link>
       </p>
     </main>
-  );
-}
-
-/**
- * O que aparece no lugar do formulário depois de criar a conta.
- *
- * Deixar os campos preenchidos na tela faz a pessoa achar que não funcionou e
- * clicar de novo. Aqui a próxima ação dela está dita em uma frase.
- */
-function ConfiraOEmail({ email }: { email: string }) {
-  return (
-    <div className="text-center">
-      <Dindi size={64} humor="atento" className="mx-auto" />
-      <h2 className="mt-4 text-lg font-bold tracking-tight">Confira seu email</h2>
-      <p className="justo mt-2 text-sm leading-relaxed text-suave">
-        Mandei um link de confirmação para{" "}
-        <strong className="font-medium text-tinta">{email}</strong>. É só clicar nele que
-        eu abro seu dindi.
-      </p>
-      <p className="mt-3 text-sm text-suave">
-        Não chegou em alguns minutos? Olha no spam — e confere se o endereço está certo.
-      </p>
-    </div>
   );
 }
