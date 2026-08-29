@@ -47,10 +47,15 @@ export default async function Home() {
 
   return (
     <>
+      {/*
+        No primeiro dia o porquinho fala uma vez só.
+        A dica flutuante já mostra ele apontando para o +, então o cartão de
+        boas-vindas entrega o texto sem repetir o mascote logo abaixo — quatro
+        porquinhos na mesma tela viram papel de parede, não personagem.
+      */}
       {semNada ? (
         <>
           <PrimeiroDia nome={session.displayName} />
-          {/* Só enquanto não existe nada: assim que houver um gasto, ele cala. */}
           <DicaDoMais />
         </>
       ) : null}
@@ -135,7 +140,7 @@ export default async function Home() {
         </SectionTitle>
 
         {sonhos.length === 0 ? (
-          <Empty>
+          <Empty semDindi>
             Ainda não tem nenhum sonho com nome. Peça pro Claude:{" "}
             <em>&ldquo;quero juntar 12 mil até dezembro para uma viagem&rdquo;</em>.
           </Empty>
@@ -178,7 +183,7 @@ export default async function Home() {
         </SectionTitle>
 
         {extrato.count === 0 ? (
-          <Empty>
+          <Empty semDindi>
             Nada lançado em {monthLabel(today())} ainda. Diga pro Claude:{" "}
             <em>&ldquo;gastei 45 reais no mercado&rdquo;</em>.
           </Empty>

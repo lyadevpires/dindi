@@ -46,11 +46,29 @@ export function Empty({
   children,
   semLink = false,
   humor = "atento",
+  semDindi = false,
 }: {
   children: ReactNode;
   semLink?: boolean;
   humor?: Humor;
+  /** Para telas que já mostram o porquinho perto — ele não precisa aparecer duas vezes. */
+  semDindi?: boolean;
 }) {
+  if (semDindi) {
+    return (
+      <div className="rounded-2xl border border-dashed border-borda bg-areia/40 px-4 py-6 text-center text-sm text-suave">
+        {children}
+        {semLink ? null : (
+          <p className="mt-2">
+            <Link href="/conectar" className="underline underline-offset-2">
+              Conectar o Claude
+            </Link>
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-dashed border-borda bg-areia/40 p-5">
       <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-4">
