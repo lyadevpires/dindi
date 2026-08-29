@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { env, appUrl } from "@/lib/env";
 import { safeEqual } from "@/lib/oauth";
+import { emailDeSenha, mandarEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,8 +31,25 @@ export async function POST(request: Request) {
     return Response.json({ error: "não autorizado" }, { status: 401 });
   }
 
-  const { email } = (await request.json().catch(() => ({}))) as { email?: string };
-  if (!email) return Response.json({ error: "falta o email" }, { status: 400 });
+  const { email, enviar } = (await request.json().catch(() => ({}))) as {
+    email?: string;
+    enviar?: boolean;
+  };
+
+  // Sem email, devolve quem existe. É o único jeito de descobrir com qual
+  // endereço a conta foi criada quando ninguém lembra — e some junto com o
+  // resto desta rota.
+  if (!email) {
+    const { data, error: listaErro } = await supabaseAdmin().auth.admin.listUsers();
+    if (listaErro) return Response.json({ error: listaErro.message }, { status: 400 });
+    return Response.json({
+      contas: data.users.map((u) => ({
+        email: u.email,
+        confirmado: Boolean(u.email_confirmed_at),
+        criada: u.created_at,
+      })),
+    });
+  }
 
   const { data, error } = await supabaseAdmin().auth.admin.generateLink({
     type: "recovery",
@@ -47,5 +65,9 @@ export async function POST(request: Request) {
   // assim ele funciona mesmo com o Site URL do projeto ainda errado.
   const link = `${appUrl()}/auth/confirm?token_hash=${hash}&type=recovery&next=${encodeURIComponent("/nova-senha")}`;
 
-  return Response.json({ link, validade: "uma hora" });
+  // Com `enviar`, tenta mandar de verdade e conta o que deu — é assim que se
+  // descobre por que um email não chegou, em vez de adivinhar.
+  const envio = enviar ? await mandarEmail(emailDeSenha(email, link)) : "não pedido";
+
+  return Response.json({ link, envio: envio ?? "saiu", validade: "uma hora" });
 }

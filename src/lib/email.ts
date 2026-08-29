@@ -139,11 +139,17 @@ export async function mandarEmail(e: Email): Promise<string | null> {
 
     if (!r.ok) {
       const detalhe = await r.text().catch(() => "");
-      return `O servidor de email recusou (${r.status}). ${detalhe.slice(0, 200)}`;
+      const erro = `O servidor de email recusou (${r.status}). ${detalhe.slice(0, 300)}`;
+      // Email que não sai em silêncio é o pior tipo de falha: a pessoa fica
+      // esperando na caixa de entrada e ninguém nunca fica sabendo.
+      console.error("[email] falhou:", erro);
+      return erro;
     }
     return null;
   } catch (err) {
-    return `Não consegui falar com o servidor de email: ${(err as Error).message}`;
+    const erro = `Não consegui falar com o servidor de email: ${(err as Error).message}`;
+    console.error("[email] falhou:", erro);
+    return erro;
   }
 }
 
