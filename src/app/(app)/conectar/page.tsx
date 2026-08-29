@@ -1,6 +1,8 @@
 import { Card, SectionTitle } from "@/components/ui";
 import { Dindi } from "@/components/dindi";
 import { CopiarEndereco } from "@/components/copiar";
+import { pageCtx } from "@/lib/ctx";
+import { formatDate } from "@/lib/dates";
 import { appUrl } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -37,25 +39,72 @@ const EXEMPLOS = [
 
 export default async function Conectar() {
   const url = `${appUrl()}/api/mcp`;
+  const { session, ctx } = await pageCtx();
+
+  /*
+   * Já está conectado?
+   *
+   * Sem isto o app fica mudo quando dá certo: o aviso de "conecte o Claude"
+   * some e mais nada aparece no lugar. Silêncio não é confirmação — quem
+   * acabou de conectar precisa ver escrito que funcionou, senão fica sem
+   * saber se deu certo e tenta de novo.
+   */
+  const { data: conexao } = await ctx.db
+    .from("oauth_tokens")
+    .select("created_at, last_used_at, oauth_clients(client_name)")
+    .eq("user_id", session.userId)
+    .eq("token_type", "access")
+    .eq("revoked", false)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const cliente = conexao?.oauth_clients as unknown as { client_name: string | null } | null;
 
   return (
     <>
-      <div className="mb-6 flex items-start gap-4">
-        <Dindi size={56} humor="atento" />
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Conectar o Claude</h1>
-          <p className="mt-1 text-sm text-suave">
-            Depois disso, é só conversar. Você fala, o Claude anota, e este site mostra.
-          </p>
+      {conexao ? (
+        <Card className="mb-6 border-verdinho/30 bg-verdinho-claro">
+          <div className="flex items-start gap-4">
+            <Dindi size={64} humor="comemorando" className="shrink-0" />
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold tracking-tight text-verdinho">
+                O {cliente?.client_name || "Claude"} já está conectado
+              </h1>
+              <p className="justo mt-1 text-sm leading-relaxed text-suave">
+                Pronto: agora é só falar. Conte um gasto na conversa e ele aparece aqui —
+                você não precisa fazer mais nada nesta tela.
+              </p>
+              <p className="mt-2 text-xs text-suave">
+                Conectado em {formatDate(conexao.created_at.slice(0, 10))}
+                {conexao.last_used_at
+                  ? ` · usado por último em ${formatDate(conexao.last_used_at.slice(0, 10))}`
+                  : " · ainda não foi usado"}
+                . Para desconectar, vá em Ajustes.
+              </p>
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <div className="mb-6 flex items-start gap-4">
+          <Dindi size={64} humor="atento" acena />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Conectar o Claude</h1>
+            <p className="justo mt-1 text-sm leading-relaxed text-suave">
+              Depois disso, é só conversar. Você fala, o Claude anota, e este site mostra.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <Card className="mb-6">
         <p className="text-xs uppercase tracking-wide text-suave">Endereço do dindi</p>
         <CopiarEndereco url={url} />
       </Card>
 
-      <SectionTitle>Passo a passo</SectionTitle>
+      <SectionTitle>
+        {conexao ? "Conectar em outro lugar" : "Passo a passo"}
+      </SectionTitle>
       <ol className="mb-8 space-y-3">
         {PASSOS.map((p, i) => (
           <li key={p.titulo}>
