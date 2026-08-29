@@ -120,7 +120,9 @@ export default function Privacidade() {
         <p>
           A LGPD (a lei brasileira de proteção de dados) te dá o direito de saber o que é
           guardado sobre você, corrigir o que estiver errado, pedir uma cópia e mandar
-          apagar. Apagar você faz sozinha pelo app; para o resto, é só escrever.
+          apagar. Em <strong className="font-medium text-tinta">Ajustes</strong> você faz
+          os dois sozinha: <strong className="font-medium text-tinta">baixar seus dados</strong>{" "}
+          num arquivo e apagar a conta. Para o resto, é só escrever.
         </p>
       </Bloco>
 

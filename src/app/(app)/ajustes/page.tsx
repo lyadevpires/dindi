@@ -247,6 +247,23 @@ export default async function Ajustes() {
             </Link>
             .
           </p>
+          {/*
+            Baixar vem antes de apagar de propósito: é a ordem em que a pessoa
+            deveria fazer as duas coisas.
+          */}
+          <a
+            href="/api/meus-dados"
+            download
+            className="mb-4 inline-flex items-center gap-2 rounded-xl border border-borda px-4 py-2.5 text-sm font-medium transition hover:bg-areia"
+          >
+            Baixar meus dados
+          </a>
+          <p className="justo mb-5 text-sm leading-relaxed text-suave">
+            Um arquivo com tudo que está guardado aqui: contas, lançamentos, faturas,
+            limites e metas. Vale como cópia de segurança sua — guarde num lugar seguro,
+            porque ele tem os seus números.
+          </p>
+
           <ApagarMinhaConta sozinha={membros.length === 1} />
         </Card>
       </section>
