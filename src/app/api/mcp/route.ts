@@ -46,6 +46,27 @@ async function handle(request: Request): Promise<Response> {
     userId: owner.userId,
   };
 
+  /*
+   * Deixa rastro de qual ferramenta foi chamada.
+   *
+   * Sem isto, quando alguém diz "falei com o Claude e não apareceu nada", não
+   * há como saber se ele chegou a pedir alguma coisa ou só se apresentou — e
+   * a diferença entre esses dois casos é o conserto inteiro.
+   *
+   * Vai só o nome do método e da ferramenta. Valor, descrição e categoria não
+   * entram no log: isso é dinheiro de gente, não é material de depuração.
+   */
+  try {
+    const espiada = await request.clone().json();
+    const nome =
+      espiada?.method === "tools/call"
+        ? `tools/call ${espiada?.params?.name ?? "?"}`
+        : String(espiada?.method ?? "?");
+    console.log(`[mcp] ${nome} · dindi ${owner.householdId.slice(0, 8)}`);
+  } catch {
+    // GET e DELETE não têm corpo. Sem rastro, seguimos.
+  }
+
   const handler = createMcpHandler(
     (server) => {
       registerDindiTools(server, ctx);
