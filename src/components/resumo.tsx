@@ -34,7 +34,7 @@ export function Saldo({
   contas: Conta[];
 }) {
   return (
-    <section className="relative mb-3 overflow-hidden rounded-3xl bg-tinta p-6 text-creme">
+    <section className="relative mb-3 overflow-hidden rounded-3xl bg-tinta p-6 text-creme has-[details[open]]:[&_[data-porquinho]]:opacity-0">
       {/* Manchas tom sobre tom, só para o cartão não ser um retângulo chapado. */}
       <span
         aria-hidden
@@ -49,12 +49,18 @@ export function Saldo({
         O porquinho espiando por cima da borda de baixo.
         Quem corta ele pela metade é o `overflow-hidden` do cartão — é isso que
         faz parecer que ele está afundado, olhando o saldo junto com você.
+
+        Ele some quando a lista de contas abre: ali os valores são alinhados à
+        direita e passam por cima dele. Entre enfeite e número de dinheiro, o
+        número ganha sempre — mascote cobrindo saldo é defeito, não charme.
       */}
-      <Dindi
-        size={92}
-        humor="atento"
-        className="pointer-events-none absolute -bottom-7 right-4 opacity-90"
-      />
+      <span
+        data-porquinho
+        aria-hidden
+        className="pointer-events-none absolute -bottom-7 right-3 opacity-80 transition-opacity duration-200"
+      >
+        <Dindi size={88} humor="atento" />
+      </span>
 
       <div className="relative">
         <p className="text-sm text-creme/60">Seu dinheiro hoje</p>
