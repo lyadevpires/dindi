@@ -69,10 +69,16 @@ function montarHtml(e: Email): string {
     <tr><td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
 
-        <tr><td style="padding-bottom:20px;">
-          <img src="${appUrl()}/apple-icon.png" width="40" height="40" alt=""
-               style="display:inline-block;vertical-align:middle;border:0;border-radius:10px;">
-          <span style="display:inline-block;vertical-align:middle;padding-left:10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:20px;font-weight:700;color:${TINTA};">dindi</span>
+        <!--
+          Gmail e Outlook bloqueiam imagem de fora até a pessoa clicar em
+          "exibir imagens", então o porquinho não pode ser o cabeçalho — ele é
+          enfeite. Quem manda é a palavra, em texto, que aparece sempre. O
+          `alt` vazio evita aquele retângulo com um ícone rasgado no lugar.
+        -->
+        <tr><td style="padding-bottom:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+          <img src="${appUrl()}/icon-192.png" width="36" height="36" alt=""
+               style="vertical-align:middle;border:0;border-radius:9px;">
+          <span style="vertical-align:middle;padding-left:10px;font-size:20px;font-weight:700;color:${TINTA};">dindi</span>
         </td></tr>
 
         <tr><td style="background:#ffffff;border:1px solid ${BORDA};border-radius:20px;padding:32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
