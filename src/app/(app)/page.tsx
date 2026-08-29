@@ -4,6 +4,7 @@ import { Card, Empty, Progress, SectionTitle } from "@/components/ui";
 import { Conselhos } from "@/components/conselhos";
 import { Grupos } from "@/components/grupos";
 import { Anel } from "@/components/anel";
+import { DicaDoMais } from "@/components/dica";
 import { calcularSaude } from "@/lib/db/saude";
 import {
   EntrouSaiu,
@@ -46,7 +47,13 @@ export default async function Home() {
 
   return (
     <>
-      {semNada ? <PrimeiroDia nome={session.displayName} /> : null}
+      {semNada ? (
+        <>
+          <PrimeiroDia nome={session.displayName} />
+          {/* Só enquanto não existe nada: assim que houver um gasto, ele cala. */}
+          <DicaDoMais />
+        </>
+      ) : null}
 
       {/* ---------------- A nota, resumida ---------------- */}
       {saude.nota === null ? null : (

@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { criarPrimeiraConta, lancar } from "@/app/(app)/actions";
+import { Dindi } from "@/components/dindi";
 import type { ActionState } from "@/app/auth/actions";
 
 export type CategoriaOpcao = {
@@ -373,9 +374,11 @@ function Formulario({
           {estado.error}
         </p>
       ) : null}
+      {/* Anotar é a ação que a pessoa faz todo dia; vale um porquinho feliz. */}
       {estado?.ok ? (
-        <p className="rounded-xl bg-verdinho-claro px-3.5 py-2.5 text-sm text-verdinho">
-          {estado.ok}
+        <p className="surge flex items-center gap-2.5 rounded-xl bg-verdinho-claro px-3.5 py-2.5 text-sm text-verdinho">
+          <Dindi size={30} humor="comemorando" className="pulinho shrink-0" />
+          <span className="min-w-0">{estado.ok}</span>
         </p>
       ) : null}
 

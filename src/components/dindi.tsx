@@ -19,12 +19,23 @@ export function Dindi({
   size = 40,
   humor = "feliz",
   className,
+  vivo = true,
+  acena = false,
 }: {
   size?: number;
   humor?: Humor;
   className?: string;
+  /** Pisca, balança o rabinho e mexe as orelhas sozinho. */
+  vivo?: boolean;
+  /** Acena com o bracinho — para quando ele está chamando para alguma coisa. */
+  acena?: boolean;
 }) {
   const dormindo = humor === "dormindo";
+
+  // Quem dorme não pisca nem abana o rabo.
+  const vida = [vivo && !dormindo ? "dindi-vivo" : "", acena ? "dindi-acena" : "", className]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <svg
@@ -34,11 +45,12 @@ export function Dindi({
       fill="none"
       role="img"
       aria-label="dindi, o porquinho"
-      className={className}
+      className={vida}
     >
       <g stroke={TRACO} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
         {/* rabinho de rolha */}
         <path
+          data-parte="rabo"
           d="M63.5 79c5-.5 7.8 1.2 8.2 4.9.3 2.8-1 4.4-4 4.7-2.5.2-3.9-.8-4.1-3.3-.2-1.9.9-3 3-3.2"
           fill="none"
         />
@@ -51,11 +63,15 @@ export function Dindi({
         <path d="M39 86v-3.2c0-2 1.6-3.6 3.6-3.6s3.6 1.6 3.6 3.6V86" fill={PELE} />
         <path d="M49.8 86v-3.2c0-2 1.6-3.6 3.6-3.6S57 80.8 57 82.8V86" fill={PELE} />
         <path d="M30.5 63c-3.8.6-5.7 3.2-5.7 7.9 0 3.2 1.1 5.3 3.4 6.2" fill={PELE} />
-        <path d="M65.5 63c3.8.6 5.7 3.2 5.7 7.9 0 3.2-1.1 5.3-3.4 6.2" fill={PELE} />
+        <path
+          data-parte="braco-d"
+          d="M65.5 63c3.8.6 5.7 3.2 5.7 7.9 0 3.2-1.1 5.3-3.4 6.2"
+          fill={PELE}
+        />
 
         {/* orelhas — atrás da cabeça, por isso vêm antes */}
-        <path d="M35 20C28 9 16 5 12 12c-4 7-1 19 9 26" fill={PELE} />
-        <path d="M61 20c7-11 19-15 23-8 4 7 1 19-9 26" fill={PELE} />
+        <path data-parte="orelha-e" d="M35 20C28 9 16 5 12 12c-4 7-1 19 9 26" fill={PELE} />
+        <path data-parte="orelha-d" d="M61 20c7-11 19-15 23-8 4 7 1 19-9 26" fill={PELE} />
 
         {/* cabeça */}
         <path
@@ -71,14 +87,16 @@ export function Dindi({
         />
 
         {/* a moeda */}
-        <circle cx="70" cy="67" r="8.6" fill="#F5C542" />
-        <circle cx="70" cy="67" r="5.5" fill="none" stroke="#C89A1E" strokeWidth="1.8" />
-        <path
-          d="M70 63v8M72.1 64.4c-.6-.7-1.4-1-2.4-1-1.4 0-2.3.7-2.3 1.8s.7 1.5 2.3 1.9c1.7.4 2.5.9 2.5 2s-1 1.9-2.5 1.9c-1 0-1.9-.4-2.6-1.1"
-          stroke="#8A6512"
-          strokeWidth="1.7"
-          fill="none"
-        />
+        <g data-parte="moeda">
+          <circle cx="70" cy="67" r="8.6" fill="#F5C542" />
+          <circle cx="70" cy="67" r="5.5" fill="none" stroke="#C89A1E" strokeWidth="1.8" />
+          <path
+            d="M70 63v8M72.1 64.4c-.6-.7-1.4-1-2.4-1-1.4 0-2.3.7-2.3 1.8s.7 1.5 2.3 1.9c1.7.4 2.5.9 2.5 2s-1 1.9-2.5 1.9c-1 0-1.9-.4-2.6-1.1"
+            stroke="#8A6512"
+            strokeWidth="1.7"
+            fill="none"
+          />
+        </g>
       </g>
 
       {/* olhos */}
@@ -89,16 +107,19 @@ export function Dindi({
         </g>
       ) : (
         <>
-          <g fill={TRACO}>
-            <ellipse cx="37" cy="34" rx="3.6" ry="4" />
-            <ellipse cx="59" cy="34" rx="3.6" ry="4" />
+          {/* Olhos e brilhinho piscam juntos, senão o brilho fica boiando. */}
+          <g data-parte="olhos">
+            <g fill={TRACO}>
+              <ellipse cx="37" cy="34" rx="3.6" ry="4" />
+              <ellipse cx="59" cy="34" rx="3.6" ry="4" />
+            </g>
+            {humor === "atento" ? null : (
+              <>
+                <circle cx="38.2" cy="32.6" r="1.2" fill="#fff" />
+                <circle cx="60.2" cy="32.6" r="1.2" fill="#fff" />
+              </>
+            )}
           </g>
-          {humor === "atento" ? null : (
-            <>
-              <circle cx="38.2" cy="32.6" r="1.2" fill="#fff" />
-              <circle cx="60.2" cy="32.6" r="1.2" fill="#fff" />
-            </>
-          )}
           {humor === "preocupado" ? (
             <g stroke={TRACO} strokeWidth="2.6" strokeLinecap="round" fill="none">
               <path d="M31.5 26c1.8-1.5 4.1-1.8 6.3-1" />

@@ -118,12 +118,124 @@ body {
   animation: cai 2.6s linear forwards;
 }
 
+/* -------------------------------------------------------------------
+   O porquinho vivo.
+
+   Ele é SVG desenhado à mão, então dá para animar cada pedaço dele por
+   dentro: os olhos piscam, o rabinho balança, a moeda sobe e desce. Tudo
+   é lento e pequeno de propósito — mascote que se mexe demais cansa em
+   dois minutos e atrapalha quem só quer ver quanto tem na conta.
+
+   `transform-box: fill-box` é o que faz o giro acontecer em volta do
+   próprio desenho, e não do canto do SVG inteiro.
+   ------------------------------------------------------------------- */
+.dindi-vivo [data-parte] {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes dindi-piscar {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.06);
+  }
+}
+
+@keyframes dindi-rabo {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-14deg);
+  }
+}
+
+@keyframes dindi-moeda {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-2.5px) rotate(8deg);
+  }
+}
+
+@keyframes dindi-orelha {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes dindi-acenar {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-24deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+
+.dindi-vivo [data-parte="olhos"] {
+  animation: dindi-piscar 5.6s ease-in-out infinite;
+}
+.dindi-vivo [data-parte="rabo"] {
+  animation: dindi-rabo 3.4s ease-in-out infinite;
+  transform-origin: left center;
+}
+.dindi-vivo [data-parte="moeda"] {
+  animation: dindi-moeda 4.2s ease-in-out infinite;
+}
+.dindi-vivo [data-parte="orelha-e"] {
+  animation: dindi-orelha 6s ease-in-out infinite;
+  transform-origin: bottom right;
+}
+.dindi-vivo [data-parte="orelha-d"] {
+  animation: dindi-orelha 6s ease-in-out infinite reverse;
+  transform-origin: bottom left;
+}
+.dindi-acena [data-parte="braco-d"] {
+  animation: dindi-acenar 1.1s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: top left;
+}
+
+/* A setinha do "clica aqui". */
+@keyframes cutuca {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(7px);
+  }
+}
+
+.cutuca {
+  animation: cutuca 1.3s ease-in-out infinite;
+}
+
 /* Quem pede menos movimento no sistema recebe a tela parada. */
 @media (prefers-reduced-motion: reduce) {
   .surge,
   .pulinho,
   .cai,
-  .sobe {
+  .sobe,
+  .cutuca,
+  .dindi-vivo [data-parte],
+  .dindi-acena [data-parte] {
     animation: none;
   }
   .cai {
