@@ -24,6 +24,7 @@ const ABAS = [
 
 const NO_MENU = [
   { href: "/saude", label: "Saúde do seu dinheiro", dica: "sua nota e de onde ela sai" },
+  { href: "/reserva", label: "Montar minha reserva", dica: "onde deixar e como começar" },
   { href: "/fixas", label: "Contas fixas", dica: "o que chega todo mês" },
   { href: "/orcamento", label: "Orçamento", dica: "seus limites do mês" },
   { href: "/metas", label: "Metas", dica: "reserva e sonhos" },

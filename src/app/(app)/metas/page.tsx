@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, Empty, Pill, Progress, SectionTitle } from "@/components/ui";
 import { pageCtx } from "@/lib/ctx";
 import { getGoalProgress } from "@/lib/db/finance";
@@ -31,10 +32,28 @@ export default async function Metas() {
       <SectionTitle>Seus sonhos</SectionTitle>
 
       {metas.length === 0 ? (
-        <Empty>
-          Nenhuma meta ainda. Peça pro Claude:{" "}
-          <em>&ldquo;cria uma meta de viagem pro Chile de 12 mil até dezembro&rdquo;</em>.
-        </Empty>
+        <>
+          <Empty>
+            Nenhuma meta ainda. Peça pro Claude:{" "}
+            <em>&ldquo;cria uma meta de viagem pro Chile de 12 mil até dezembro&rdquo;</em>.
+          </Empty>
+          {/* Antes de qualquer sonho vem o colchão — e como montá-lo. */}
+          <Link
+            href="/reserva"
+            className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-borda bg-white p-5 transition hover:bg-areia/40"
+          >
+            <span className="min-w-0">
+              <span className="block font-semibold">Comece pela reserva de emergência</span>
+              <span className="justo mt-0.5 block text-sm leading-relaxed text-suave">
+                Antes de qualquer sonho vem o colchão. Te explico de quanto ela deveria
+                ser, onde deixar esse dinheiro e como começar.
+              </span>
+            </span>
+            <span aria-hidden className="shrink-0 text-suave">
+              →
+            </span>
+          </Link>
+        </>
       ) : (
         <>
           <Card className="mb-5 bg-roxinho-claro">
