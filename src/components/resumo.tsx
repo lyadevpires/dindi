@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Dindi } from "@/components/dindi";
 import { formatBRL } from "@/lib/money";
 
 /**
@@ -42,6 +43,17 @@ export function Saldo({
       <span
         aria-hidden
         className="pointer-events-none absolute -bottom-14 -left-10 h-32 w-32 rounded-full bg-creme/[0.05]"
+      />
+
+      {/*
+        O porquinho espiando por cima da borda de baixo.
+        Quem corta ele pela metade é o `overflow-hidden` do cartão — é isso que
+        faz parecer que ele está afundado, olhando o saldo junto com você.
+      */}
+      <Dindi
+        size={92}
+        humor="atento"
+        className="pointer-events-none absolute -bottom-7 right-4 opacity-90"
       />
 
       <div className="relative">

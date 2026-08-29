@@ -41,7 +41,7 @@ export default async function SaudePage() {
         <section className="mb-8 rounded-2xl bg-rosinha/60 p-5">
           <div className="flex items-start gap-3">
             <Dindi
-              size={40}
+              size={72}
               humor={conselho.nivel === "parabens" ? "comemorando" : "atento"}
               className="shrink-0"
             />

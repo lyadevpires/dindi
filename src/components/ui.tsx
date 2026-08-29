@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { Dindi, type Humor } from "@/components/dindi";
 
 /** Peças visuais reutilizadas em todas as telas. */
 
@@ -44,20 +45,36 @@ export function SectionTitle({
 export function Empty({
   children,
   semLink = false,
+  humor = "atento",
 }: {
   children: ReactNode;
   semLink?: boolean;
+  humor?: Humor;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-borda bg-areia/40 px-4 py-8 text-center text-sm text-suave">
-      {children}
-      {semLink ? null : (
-        <p className="mt-3">
-          <Link href="/conectar" className="underline underline-offset-2">
-            Conectar o Claude
-          </Link>
-        </p>
-      )}
+    <div className="rounded-2xl border border-dashed border-borda bg-areia/40 p-5">
+      <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <Dindi size={76} humor={humor} acena className="shrink-0" />
+
+        {/* Balão de fala: o rabinho é um quadradinho girado, escondendo a borda
+            do lado que encosta no balão. */}
+        <div className="relative w-full rounded-2xl border border-borda bg-white px-4 py-3.5 text-center text-sm text-suave sm:text-left">
+          <span
+            aria-hidden
+            className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-borda bg-white sm:left-auto sm:-left-1.5 sm:top-1/2 sm:-translate-x-0 sm:-translate-y-1/2 sm:border-l sm:border-t-0 sm:border-b sm:border-r-0"
+          />
+          <span className="relative block">{children}</span>
+
+          {semLink ? null : (
+            <Link
+              href="/conectar"
+              className="relative mt-2 inline-block font-medium text-tinta underline underline-offset-2"
+            >
+              Conectar o Claude
+            </Link>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

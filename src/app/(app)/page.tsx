@@ -222,7 +222,7 @@ function PrimeiroDia({ nome }: { nome: string }) {
   return (
     <Card className="mb-8 bg-areia/50">
       <div className="flex items-start gap-4">
-        <Dindi size={52} humor="feliz" className="shrink-0" />
+        <Dindi size={88} humor="feliz" acena className="shrink-0" />
         <div>
           <h1 className="text-xl font-bold tracking-tight">Oi, {nome}!</h1>
           <p className="mt-1 text-sm text-suave">
