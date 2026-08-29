@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Dindi } from "@/components/dindi";
 import { Barra } from "@/components/barra";
+import { Sino } from "@/components/sino";
 
 /**
  * A casca das telas de dentro.
@@ -17,33 +17,36 @@ import { Barra } from "@/components/barra";
  * dizer onde você está, e a navegação embaixo, na altura do polegar.
  */
 export function Shell({
-  displayName,
-  householdName,
   sair,
   aviso,
   lancar,
+  ultimoAviso,
   children,
 }: {
-  displayName: string;
-  householdName: string;
   sair: React.ReactNode;
   aviso?: React.ReactNode;
   lancar: React.ReactNode;
+  /** Data do aviso mais recente, para o sino saber se tem novidade. */
+  ultimoAviso: string | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
 
   return (
     <>
+      {/*
+        Cabeçalho enxuto: só a marca e o sino.
+        O porquinho saiu daqui de propósito — ele já aparece cumprimentando,
+        espiando o saldo e nas telas vazias. Repetido em cima de tudo ele vira
+        papel de parede. E o nome do dindi foi para Ajustes, que é onde a
+        pessoa procura quando quer trocar.
+      */}
       <header className="sticky top-0 z-30 border-b border-borda bg-creme/90 backdrop-blur">
         <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-4 px-5 py-3">
-          <Link href="/" className="flex items-center gap-2">
-            <Dindi size={28} />
-            <span className="text-lg font-bold tracking-tight">dindi</span>
+          <Link href="/" className="text-lg font-bold tracking-tight">
+            dindi
           </Link>
-          <span className="truncate text-sm text-suave">
-            {displayName} · {householdName}
-          </span>
+          <Sino ultimoAviso={ultimoAviso} />
         </div>
       </header>
 
@@ -53,7 +56,7 @@ export function Shell({
       */}
       <main
         className="mx-auto w-full max-w-2xl flex-1 px-5 py-6"
-        style={{ paddingBottom: "calc(6.5rem + env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: "calc(7.75rem + env(safe-area-inset-bottom))" }}
       >
         {/* Na própria tela de conectar o lembrete seria piada. */}
         {pathname === "/conectar" ? null : aviso}

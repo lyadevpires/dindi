@@ -17,7 +17,7 @@ import { today } from "@/lib/dates";
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { session, ctx } = await pageCtx();
-  const [contas, categorias, conexoes] = await Promise.all([
+  const [contas, categorias, conexoes, ultimo] = await Promise.all([
     listAccounts(ctx),
     listCategories(ctx),
     ctx.db
@@ -26,12 +26,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .eq("user_id", session.userId)
       .eq("token_type", "access")
       .eq("revoked", false),
+    // Só a data do aviso mais recente: é tudo que o sino precisa saber, e é
+    // uma consulta barata o bastante para rodar em toda tela.
+    ctx.db
+      .from("alert_log")
+      .select("last_sent")
+      .eq("household_id", ctx.householdId)
+      .order("last_sent", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   return (
     <Shell
-      displayName={session.displayName}
-      householdName={session.householdName}
+      ultimoAviso={ultimo.data?.last_sent ?? null}
       aviso={(conexoes.count ?? 0) > 0 ? null : <AvisoConectar />}
       lancar={
         <BotaoLancar

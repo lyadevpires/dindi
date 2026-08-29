@@ -51,7 +51,7 @@ export function Barra({ lancar, sair }: { lancar: React.ReactNode; sair: React.R
         className="fixed inset-x-0 bottom-0 z-40 border-t border-borda bg-creme/95 backdrop-blur"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <ul className="mx-auto flex w-full max-w-lg items-end justify-around px-2 pb-1.5 pt-2">
+        <ul className="mx-auto flex w-full max-w-lg items-end justify-around px-2 pb-2.5 pt-3">
           {ABAS.slice(0, 2).map((a) => (
             <Aba key={a.href} {...a} ativa={ehAtiva(pathname, a.href)} />
           ))}
@@ -67,12 +67,12 @@ export function Barra({ lancar, sair }: { lancar: React.ReactNode; sair: React.R
             <button
               type="button"
               onClick={() => menu.current?.showModal()}
-              className={`flex w-16 flex-col items-center gap-1 rounded-xl px-1 py-1.5 transition ${
+              className={`flex w-[4.5rem] flex-col items-center gap-1.5 rounded-xl px-1 py-2 transition ${
                 noMenu ? "text-tinta" : "text-suave"
               }`}
             >
               <Tracos ativa={noMenu} />
-              <span className="text-[11px] font-medium leading-none">Menu</span>
+              <span className="text-xs font-medium leading-none">Menu</span>
             </button>
           </li>
         </ul>
@@ -146,7 +146,7 @@ function Aba({
     <li>
       <Link
         href={href}
-        className={`flex w-16 flex-col items-center gap-1 rounded-xl px-1 py-1.5 transition ${
+        className={`flex w-[4.5rem] flex-col items-center gap-1.5 rounded-xl px-1 py-2 transition ${
           ativa ? "text-tinta" : "text-suave"
         }`}
       >
@@ -154,7 +154,7 @@ function Aba({
           <Icone ativa={ativa} />
           <Carregando />
         </span>
-        <span className="text-[11px] font-medium leading-none">{label}</span>
+        <span className="text-xs font-medium leading-none">{label}</span>
       </Link>
     </li>
   );
@@ -184,8 +184,8 @@ function Carregando() {
 function Base({ children, ativa }: { children: React.ReactNode; ativa: boolean }) {
   return (
     <svg
-      width="24"
-      height="24"
+      width="26"
+      height="26"
       viewBox="0 0 24 24"
       fill={ativa ? "var(--color-rosinha)" : "none"}
       stroke="currentColor"
