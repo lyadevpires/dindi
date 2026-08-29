@@ -12,6 +12,30 @@ export const dynamic = "force-dynamic";
 /**
  * O servidor MCP.
  * É este endereço que a pessoa cola no Claude para conectar o dindi.
+ *
+ * ---------------------------------------------------------------------
+ * DÍVIDA CONHECIDA: duas descobertas por lançamento
+ *
+ * Ao importar uma fatura, o registro mostrou 78 chamadas para fazer o
+ * trabalho de 26: dois `server/discover` antes de cada `tools/call`.
+ *
+ * A causa é que este endereço não tem sessão. Cada requisição monta o
+ * servidor do zero, e a versão do `mcp-handler` que usamos não expõe
+ * nenhuma opção de guardar sessão. Sem sessão o cliente não tem o que
+ * reaproveitar e redescobre as ferramentas toda vez. O custo real de cada
+ * redescoberta é uma consulta ao banco (`verifyAccessToken`) mais a
+ * remontagem das ferramentas.
+ *
+ * Decidido em 2026-08-29 NÃO consertar ainda, porque:
+ *   - guardar sessão de verdade exige um Redis (infra nova) — desproporcional
+ *     para o tamanho de hoje;
+ *   - guardar o token em memória tiraria a consulta, mas faria um token
+ *     revogado continuar valendo por algum tempo. Trocar segurança do
+ *     "Desconectar" por velocidade que ninguém está sentindo é mau negócio.
+ *
+ * Reabrir quando alguém reclamar de lentidão importando fatura grande, ou
+ * quando houver gente suficiente para a consulta pesar. Aí o Redis se paga.
+ * ---------------------------------------------------------------------
  */
 
 /** Resposta 401 no formato que o Claude entende para iniciar o OAuth. */
