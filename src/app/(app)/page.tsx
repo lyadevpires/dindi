@@ -103,7 +103,7 @@ export default async function Home() {
           <Dindi
             size={56}
             humor={conquistas.ganhas > 0 ? "comemorando" : "atento"}
-            className="shrink-0"
+            className="flutua shrink-0"
           />
           <div className="min-w-0 flex-1">
             <p className="font-semibold">

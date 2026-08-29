@@ -72,7 +72,7 @@ export function Empty({
   return (
     <div className="rounded-2xl border border-dashed border-borda bg-areia/40 p-5">
       <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <Dindi size={76} humor={humor} acena className="shrink-0" />
+        <Dindi size={72} humor={humor} acena enquadramento="rosto" className="shrink-0" />
 
         {/* Balão de fala: o rabinho é um quadradinho girado, escondendo a borda
             do lado que encosta no balão. */}

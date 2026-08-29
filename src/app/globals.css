@@ -212,6 +212,53 @@ body {
   transform-origin: top left;
 }
 
+/*
+ * Cada porquinho da tela se mexe de um jeito.
+ *
+ * Quatro iguais pulando junto viram uma coisa só. Com ritmos e movimentos
+ * diferentes o olho lê cada um como um elemento — e nenhum deles chama tanta
+ * atenção a ponto de disputar com os números.
+ */
+@keyframes balancinho {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes flutua {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes espia {
+  0%,
+  100% {
+    transform: translateY(6px);
+  }
+  50% {
+    transform: translateY(0);
+  }
+}
+
+.balancinho {
+  animation: balancinho 3.6s ease-in-out infinite;
+}
+.flutua {
+  animation: flutua 5s ease-in-out infinite;
+}
+.espia {
+  animation: espia 6s ease-in-out infinite;
+}
+
 /* A setinha do "clica aqui". */
 @keyframes cutuca {
   0%,
@@ -234,6 +281,9 @@ body {
   .cai,
   .sobe,
   .cutuca,
+  .balancinho,
+  .flutua,
+  .espia,
   .dindi-vivo [data-parte],
   .dindi-acena [data-parte] {
     animation: none;

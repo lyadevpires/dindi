@@ -57,9 +57,9 @@ export function Saldo({
       <span
         data-porquinho
         aria-hidden
-        className="pointer-events-none absolute -bottom-7 right-3 opacity-80 transition-opacity duration-200"
+        className="espia pointer-events-none absolute -bottom-7 right-3 opacity-80 transition-opacity duration-200"
       >
-        <Dindi size={88} humor="atento" />
+        <Dindi size={88} humor="atento" espelhado />
       </span>
 
       <div className="relative">

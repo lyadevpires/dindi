@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Dindi } from "@/components/dindi";
 import { Barra } from "@/components/barra";
 import { Sino } from "@/components/sino";
 
@@ -35,16 +36,14 @@ export function Shell({
   return (
     <>
       {/*
-        Cabeçalho enxuto: só a marca e o sino.
-        O porquinho saiu daqui de propósito — ele já aparece cumprimentando,
-        espiando o saldo e nas telas vazias. Repetido em cima de tudo ele vira
-        papel de parede. E o nome do dindi foi para Ajustes, que é onde a
-        pessoa procura quando quer trocar.
+        Cabeçalho enxuto: o porquinho como ícone e o sino. Nada de nome de
+        pessoa nem de dindi — quem está logado já sabe de quem é a conta, e
+        isso mora em Ajustes.
       */}
       <header className="sticky top-0 z-30 border-b border-borda bg-creme/90 backdrop-blur">
         <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-4 px-5 py-3">
-          <Link href="/" className="text-lg font-bold tracking-tight">
-            dindi
+          <Link href="/" aria-label="Início" className="-ml-1 flex items-center">
+            <Dindi size={34} humor="feliz" />
           </Link>
           <Sino ultimoAviso={ultimoAviso} />
         </div>
