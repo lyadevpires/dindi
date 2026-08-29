@@ -5,6 +5,7 @@ import { Conselhos } from "@/components/conselhos";
 import { Grupos } from "@/components/grupos";
 import { Anel } from "@/components/anel";
 import { DicaDoMais } from "@/components/dica";
+import { Saudacao } from "@/components/saudacao";
 import { calcularSaude } from "@/lib/db/saude";
 import {
   EntrouSaiu,
@@ -37,6 +38,11 @@ export default async function Home() {
   const reserva = metas.find((m) => m.kind === "emergencia");
   const sonhos = metas.filter((m) => m.kind === "sonho");
 
+  // Quanto saiu hoje — é o que o porquinho comenta ao dar bom dia.
+  const saiuHoje = extrato.transactions
+    .filter((t) => t.date === today() && t.type === "expense")
+    .reduce((s, t) => s + t.amount, 0);
+
   // As categorias que mais pesaram no mês, misturando os baldes: quem olha
   // "onde saiu mais" quer ver "mercado", não "dia a dia".
   const maioresGastos = grupos.groups
@@ -53,6 +59,14 @@ export default async function Home() {
         boas-vindas entrega o texto sem repetir o mascote logo abaixo — quatro
         porquinhos na mesma tela viram papel de parede, não personagem.
       */}
+      <Saudacao
+        nome={session.displayName}
+        saiuHoje={saiuHoje}
+        entrouNoMes={grupos.income}
+        saiuNoMes={grupos.total_spent}
+        semNada={semNada}
+      />
+
       {semNada ? (
         <>
           <PrimeiroDia nome={session.displayName} />

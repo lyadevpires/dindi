@@ -15,6 +15,17 @@ export function today(tz: string = TIMEZONE): string {
   }).format(new Date());
 }
 
+/** A hora agora, no horário de Brasília (0 a 23). */
+export function horaAgora(tz: string = TIMEZONE): number {
+  return Number(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: tz,
+      hour: "2-digit",
+      hour12: false,
+    }).format(new Date())
+  );
+}
+
 export function parseISO(iso: string): { y: number; m: number; d: number } {
   const [y, m, d] = iso.split("-").map(Number);
   return { y, m, d };
