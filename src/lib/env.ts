@@ -59,7 +59,26 @@ export const env = {
       "invente uma senha longa e aleatória. A Vercel usa isso para chamar a rotina diária com segurança."
     );
   },
+
+  /**
+   * O remetente dos emails do dindi.
+   *
+   * Opcional de propósito: sem ele, o app continua de pé e o cadastro volta a
+   * funcionar como antes (sem confirmação). Quebrar o cadastro inteiro porque
+   * falta uma chave seria trocar um problema por um pior.
+   */
+  get resendApiKey(): string | null {
+    return process.env.RESEND_API_KEY || null;
+  },
+  get emailFrom(): string {
+    return process.env.EMAIL_FROM || "dindi <onboarding@resend.dev>";
+  },
 };
+
+/** Dá para mandar email de verdade agora? */
+export function temEmail(): boolean {
+  return Boolean(env.resendApiKey);
+}
 
 /** URL pública do app, usada no OAuth. */
 export function appUrl(): string {

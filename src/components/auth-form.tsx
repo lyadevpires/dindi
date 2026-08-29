@@ -61,13 +61,24 @@ export function ActionForm({
   submitLabel,
   children,
   hidden,
+  aoConcluir,
 }: {
   action: Action;
   submitLabel: string;
   children: React.ReactNode;
   hidden?: Record<string, string>;
+  /**
+   * O que mostrar no lugar do formulário quando ele der certo.
+   *
+   * Serve para o caso em que continuar vendo os campos preenchidos confunde —
+   * depois de pedir a confirmação por email, a pergunta da pessoa é "e agora?",
+   * não "será que mando de novo?".
+   */
+  aoConcluir?: (ok: string) => React.ReactNode;
 }) {
   const [state, formAction] = useActionState<ActionState, FormData>(action, null);
+
+  if (aoConcluir && state?.ok) return <>{aoConcluir(state.ok)}</>;
 
   return (
     <form action={formAction} className="space-y-4">

@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { appUrl } from "@/lib/env";
+import { appUrl, temEmail } from "@/lib/env";
+import { emailDeConfirmacao, emailDeSenha, mandarEmail } from "@/lib/email";
 
 export type ActionState = { error?: string; ok?: string } | null;
 
@@ -90,9 +91,46 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
     return { error: "Muitas contas criadas daí em pouco tempo. Tente de novo daqui a pouco." };
   }
 
-  // A conta nasce já confirmada, em vez de depender do email de confirmação
-  // do Supabase — que não temos como configurar (a integração fica trancada
-  // dentro da Vercel) e que hoje aponta para localhost.
+  /*
+   * Com email configurado, a conta nasce por confirmar.
+   *
+   * Não é burocracia: sem confirmação, um robô cria mil contas com endereços
+   * inventados e — pior — quem digita o próprio email errado fica com uma
+   * conta que nunca vai conseguir recuperar. O clique prova as duas coisas.
+   *
+   * O token é do Supabase, mas quem monta o endereço e manda a mensagem somos
+   * nós. É isso que garante que o link aponte para o dindi, e não para o que
+   * estiver configurado no painel — foi assim que um link foi parar em
+   * localhost:3000.
+   */
+  if (temEmail()) {
+    const { data, error: linkErro } = await supabaseAdmin().auth.admin.generateLink({
+      type: "signup",
+      email,
+      password,
+    });
+
+    if (linkErro) {
+      const jaExiste = /already (been )?registered|already exists/i.test(linkErro.message);
+      return { error: jaExiste ? "Esse email já tem conta. Tente entrar." : linkErro.message };
+    }
+
+    const hash = data.properties?.hashed_token;
+    if (!hash) return { error: "Não consegui gerar o link de confirmação. Tente de novo." };
+
+    const destino = next === "/" ? "/comecar" : next;
+    const link = `${appUrl()}/auth/confirm?token_hash=${hash}&type=signup&next=${encodeURIComponent(destino)}`;
+
+    const falhou = await mandarEmail(emailDeConfirmacao(email, link));
+    if (falhou) return { error: `A conta foi criada, mas o email não saiu. ${falhou}` };
+
+    // Devolve o email para a tela dizer "olha a caixa de entrada do fulano@".
+    return { ok: email };
+  }
+
+  // Sem email configurado o cadastro segue como antes, já confirmado. É pior
+  // que confirmar, mas melhor que deixar todo mundo sem entrar por falta de
+  // uma chave.
   const { error: createError } = await supabaseAdmin().auth.admin.createUser({
     email,
     password,
@@ -181,14 +219,39 @@ export async function requestPasswordReset(
   const email = String(formData.get("email") ?? "").trim();
   if (!email) return { error: "Escreva seu email." };
 
+  const recado =
+    "Se existe uma conta com esse email, o link acabou de sair. Dá uma olhada na caixa de entrada (e no spam).";
+
+  /*
+   * O link é montado por nós, e não pelo Supabase.
+   *
+   * Quando pedíamos para ele mandar, ele conferia o nosso endereço na lista
+   * dele, não encontrava, ignorava em silêncio e usava o padrão do projeto —
+   * e o link de recuperação chegava apontando para localhost:3000. Gerando o
+   * token aqui e montando o endereço nós mesmos, isso não acontece mais.
+   */
+  if (temEmail()) {
+    const { data } = await supabaseAdmin().auth.admin.generateLink({
+      type: "recovery",
+      email,
+    });
+
+    const hash = data?.properties?.hashed_token;
+    if (hash) {
+      const link = `${appUrl()}/auth/confirm?token_hash=${hash}&type=recovery&next=${encodeURIComponent("/nova-senha")}`;
+      await mandarEmail(emailDeSenha(email, link));
+    }
+    // Email inexistente cai aqui em silêncio, e a resposta é a mesma de
+    // sempre: dizer "esse email não existe" entregaria quem tem conta aqui.
+    return { ok: recado };
+  }
+
   const supabase = await supabaseServer();
   await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${appUrl()}/auth/confirm?next=${encodeURIComponent("/nova-senha")}`,
   });
 
-  return {
-    ok: "Se existe uma conta com esse email, o link acabou de sair. Dá uma olhada na caixa de entrada (e no spam).",
-  };
+  return { ok: recado };
 }
 
 /**
