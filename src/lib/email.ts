@@ -73,7 +73,7 @@ function montarHtml(e: Email): string {
           Gmail e Outlook bloqueiam imagem de fora até a pessoa clicar em
           "exibir imagens", então o porquinho não pode ser o cabeçalho — ele é
           enfeite. Quem manda é a palavra, em texto, que aparece sempre. O
-          `alt` vazio evita aquele retângulo com um ícone rasgado no lugar.
+          alt vazio evita aquele retângulo com um ícone rasgado no lugar.
         -->
         <tr><td style="padding-bottom:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
           <img src="${appUrl()}/icon-192.png" width="36" height="36" alt=""
