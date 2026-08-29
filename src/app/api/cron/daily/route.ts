@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { safeEqual } from "@/lib/oauth";
 import { getConselhos } from "@/lib/db/conselhos";
 import { aindaPodeFalar, anotarQueFalou } from "@/lib/db/alertas";
+import { calcularConquistas } from "@/lib/db/conquistas";
 import { mandarRecado } from "@/lib/push";
 
 export const runtime = "nodejs";
@@ -180,7 +181,35 @@ export async function GET(request: Request) {
 
   for (const [householdId, userId] of dindis) {
     try {
-      const conselhos = await getConselhos({ db, householdId, userId });
+      const ctx = { db, householdId, userId };
+
+      /*
+       * Conquista nova avisa na hora — é o momento em que a comemoração
+       * significa alguma coisa. O `alert_log` garante que cada uma só é
+       * anunciada uma vez na vida: parabéns repetido para de ser parabéns.
+       */
+      const { conquistas } = await calcularConquistas(ctx);
+      const ganhas = conquistas
+        .filter((c) => c.conquistada)
+        .map((c) => ({ ...c, id: `conquista-${c.id}`, nivel: "parabens" as const }));
+
+      const inéditas = await aindaPodeFalar(householdId, ganhas);
+      const nova = ganhas.find((c) => inéditas.has(c.id));
+
+      if (nova) {
+        const entregues = await mandarRecado(householdId, {
+          titulo: `Conquista: ${nova.titulo}`,
+          texto: nova.texto,
+          url: "/conquistas",
+        });
+        if (entregues > 0) {
+          await anotarQueFalou(householdId, nova.id);
+          log.recados_enviados += entregues;
+          continue; // Um recado por dia; a conquista ganhou a vez de hoje.
+        }
+      }
+
+      const conselhos = await getConselhos(ctx);
       if (conselhos.length === 0) continue;
 
       // Tira da mesa o que já foi dito há pouco. Sem isso, "o lazer passou do

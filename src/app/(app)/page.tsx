@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Dindi } from "@/components/dindi";
 import { Card, Empty, Progress, SectionTitle } from "@/components/ui";
 import { Conselhos } from "@/components/conselhos";
 import { Grupos } from "@/components/grupos";
@@ -6,6 +7,7 @@ import { Anel } from "@/components/anel";
 import { DicaDoMais } from "@/components/dica";
 import { Saudacao } from "@/components/saudacao";
 import { calcularSaude } from "@/lib/db/saude";
+import { calcularConquistas } from "@/lib/db/conquistas";
 import {
   EntrouSaiu,
   GastoVsCombinado,
@@ -32,6 +34,7 @@ export default async function Home() {
   const { metas, saldos, orcamento, agora: grupos } = retrato;
   const conselhos = montarConselhos(retrato);
   const saude = calcularSaude(retrato);
+  const conquistas = await calcularConquistas(ctx);
 
   const semNada = saldos.accounts.length === 0 && extrato.count === 0 && metas.length === 0;
   const reserva = metas.find((m) => m.kind === "emergencia");
@@ -84,6 +87,37 @@ export default async function Home() {
                   ? "Dá para melhorar. Toque para ver o que está puxando para baixo."
                   : "Tem coisa pedindo atenção. Toque para ver o quê."}
             </p>
+          </div>
+          <span aria-hidden className="shrink-0 text-suave">
+            →
+          </span>
+        </Link>
+      )}
+
+      {/* ---------------- Conquistas ---------------- */}
+      {semNada ? null : (
+        <Link
+          href="/conquistas"
+          className="mb-3 flex items-center gap-4 rounded-3xl border border-borda bg-white p-5 shadow-[0_1px_2px_rgba(44,36,32,0.04)] transition hover:bg-areia/30"
+        >
+          <Dindi
+            size={56}
+            humor={conquistas.ganhas > 0 ? "comemorando" : "atento"}
+            className="shrink-0"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">
+              Conquistas{" "}
+              <span className="tabular font-normal text-suave">
+                {conquistas.ganhas} de {conquistas.total}
+              </span>
+            </p>
+            <div className="mt-2">
+              <Progress
+                percent={(conquistas.ganhas / conquistas.total) * 100}
+                tone="tinta"
+              />
+            </div>
           </div>
           <span aria-hidden className="shrink-0 text-suave">
             →
