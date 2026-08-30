@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CriarContaForm } from "@/components/criar-conta-form";
 import { Logo } from "@/components/dindi";
-import { getUser } from "@/lib/auth";
+import { EntrarComGoogle } from "@/components/entrar-google";
+import { getUser, loginComGoogleLigado } from "@/lib/auth";
 
 export const metadata = { title: "Criar conta — dindi" };
 
@@ -12,6 +13,8 @@ export default async function CriarContaPage(props: PageProps<"/criar-conta">) {
 
   const user = await getUser();
   if (user) redirect("/comecar");
+
+  const comGoogle = await loginComGoogleLigado();
 
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-5 py-16">
@@ -25,6 +28,8 @@ export default async function CriarContaPage(props: PageProps<"/criar-conta">) {
       <div className="rounded-2xl border border-borda bg-white p-6">
         <CriarContaForm next={next} />
       </div>
+
+      {comGoogle ? <EntrarComGoogle next={next} rotulo="Criar conta com o Google" /> : null}
 
       <p className="mt-5 text-center text-sm text-suave">
         Já tem conta?{" "}

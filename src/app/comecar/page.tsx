@@ -3,6 +3,7 @@ import { ActionForm, Field } from "@/components/auth-form";
 import { Logo } from "@/components/dindi";
 import { createHousehold, joinHousehold } from "@/app/auth/actions";
 import { getSession, getUser } from "@/lib/auth";
+import { supabaseServer } from "@/lib/supabase/server";
 
 export const metadata = { title: "Começar — dindi" };
 
@@ -25,6 +26,14 @@ export default async function ComecarPage(props: PageProps<"/comecar">) {
 
   const convite = typeof params.convite === "string" ? params.convite : "";
 
+  // Quem chegou pelo Google já disse o nome uma vez; a caixa vem preenchida
+  // com o primeiro nome, e é só apagar se quiser ser chamado de outro jeito.
+  const supabase = await supabaseServer();
+  const { data: claims } = await supabase.auth.getClaims();
+  const meta = (claims?.claims?.user_metadata ?? {}) as Record<string, unknown>;
+  const nomeDoGoogle =
+    typeof meta.full_name === "string" ? meta.full_name.trim().split(/\s+/)[0] : "";
+
   return (
     <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-5 py-16">
       <div className="mb-8 text-center">
@@ -39,6 +48,7 @@ export default async function ComecarPage(props: PageProps<"/comecar">) {
             label="Como a gente te chama?"
             name="display_name"
             placeholder="Ex: Lya"
+            defaultValue={nomeDoGoogle}
             hint="É esse nome que o Claude vai usar para saber quem gastou o quê."
           />
         </ActionForm>

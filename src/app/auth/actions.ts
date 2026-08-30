@@ -152,6 +152,28 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
   redirect(next === "/" ? "/comecar" : next);
 }
 
+/**
+ * Entrar com o Google.
+ *
+ * Não tem senha nem email de confirmação para se perder no spam: o Google já
+ * provou que o email é da pessoa. Se já existe conta confirmada com o mesmo
+ * email, o Supabase junta as duas — a pessoa cai na conta de sempre.
+ */
+export async function signInWithGoogle(formData: FormData): Promise<void> {
+  const next = safeNext(formData.get("next"));
+
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${appUrl()}/auth/confirm?next=${encodeURIComponent(next)}`,
+    },
+  });
+
+  if (error || !data?.url) redirect("/entrar?erro=google");
+  redirect(data.url);
+}
+
 export async function signOut(): Promise<void> {
   const supabase = await supabaseServer();
   await supabase.auth.signOut();
