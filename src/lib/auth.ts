@@ -1,7 +1,6 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
-import { env } from "@/lib/env";
 
 export type SessionInfo = {
   userId: string;
@@ -62,28 +61,6 @@ export const getSession = cache(async (): Promise<SessionInfo | null> => {
     role: member.role as "owner" | "member",
   };
 });
-
-/**
- * O login com Google está ligado no painel do Supabase?
- *
- * O botão só aparece quando estiver: mostrar um botão que erra na cara da
- * pessoa é pior que não mostrar botão nenhum. A resposta vem de um endereço
- * público do próprio Supabase e fica guardada por cinco minutos — ligar lá
- * faz o botão aparecer aqui sozinho, sem publicar nada de novo.
- */
-export async function loginComGoogleLigado(): Promise<boolean> {
-  try {
-    const resposta = await fetch(`${env.supabaseUrl}/auth/v1/settings`, {
-      headers: { apikey: env.supabaseAnonKey },
-      next: { revalidate: 300 },
-    });
-    if (!resposta.ok) return false;
-    const config = (await resposta.json()) as { external?: { google?: boolean } };
-    return config.external?.google === true;
-  } catch {
-    return false;
-  }
-}
 
 /** Igual ao getSession, mas manda para o login/onboarding se faltar algo. */
 export async function requireSession(): Promise<SessionInfo> {

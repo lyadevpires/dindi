@@ -9,8 +9,9 @@ import { Dindi } from "@/components/dindi";
  * amigo ou de um story. Antes ela caía num "Que bom te ver de novo", que só
  * faz sentido para quem já tem conta.
  *
- * Escrito para o polegar: uma coluna, texto grande, e o botão de criar conta
- * aparecendo três vezes ao longo da rolagem.
+ * Escrito para o polegar: uma coluna, texto grande, e o botão de começar
+ * aparecendo no começo e no fim da rolagem. Ele leva para a porta única do
+ * dindi, a de entrar com o Google.
  */
 export const metadata = {
   title: "dindi — seu dinheiro, sem planilha",
@@ -160,18 +161,15 @@ export default function Oi() {
   );
 }
 
-/** Os dois botões repetidos no começo e no fim, porque no celular a rolagem é longa. */
+/** O botão repetido no começo e no fim, porque no celular a rolagem é longa. */
 function Botoes() {
   return (
     <div className="mt-7 flex flex-col items-center gap-3">
       <Link
-        href="/criar-conta"
-        className="w-full max-w-xs rounded-xl bg-tinta px-5 py-3.5 text-center text-base font-semibold text-creme transition hover:opacity-90 active:scale-[0.98]"
+        href="/entrar"
+        className="w-full max-w-xs rounded-full bg-tinta px-5 py-3.5 text-center text-base font-semibold text-creme transition hover:opacity-90 active:scale-[0.98]"
       >
-        Criar minha conta
-      </Link>
-      <Link href="/entrar" className="text-sm text-suave underline underline-offset-2">
-        Já tenho conta
+        Vamos começar
       </Link>
     </div>
   );

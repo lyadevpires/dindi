@@ -1,40 +1,30 @@
 import { signInWithGoogle } from "@/app/auth/actions";
 
 /**
- * O botão de entrar com o Google, já com o divisor "ou" por cima.
+ * O botão de entrar com o Google — a única porta da frente do dindi.
  *
- * Mora fora do cartão branco das telas de entrar e criar conta, de propósito:
- * na tela de criar conta o formulário se transforma em "confira seu email"
- * depois de enviar, e um botão do Google sobrando dentro do cartão nessa hora
- * só confundiria.
+ * É um formulário de um botão só: o clique vai ao servidor buscar o endereço
+ * seguro do Google e manda a pessoa pra lá. A volta cai em /auth/confirm.
  */
-export function EntrarComGoogle({ next, rotulo }: { next: string; rotulo: string }) {
+export function BotaoGoogle({ next, rotulo }: { next: string; rotulo: string }) {
   return (
-    <div>
-      <div className="my-5 flex items-center gap-3 text-xs text-suave">
-        <span className="h-px flex-1 bg-borda" />
-        ou
-        <span className="h-px flex-1 bg-borda" />
-      </div>
-
-      <form action={signInWithGoogle}>
-        <input type="hidden" name="next" value={next} />
-        <button
-          type="submit"
-          className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-borda bg-white px-4 py-3 text-sm font-semibold text-tinta transition hover:opacity-80"
-        >
-          <LogoDoGoogle />
-          {rotulo}
-        </button>
-      </form>
-    </div>
+    <form action={signInWithGoogle}>
+      <input type="hidden" name="next" value={next} />
+      <button
+        type="submit"
+        className="flex w-full items-center justify-center gap-2.5 rounded-full border border-borda bg-white px-5 py-3.5 text-base font-semibold text-tinta shadow-[0_2px_8px_rgba(44,36,32,0.08)] transition hover:opacity-85 active:scale-[0.98]"
+      >
+        <LogoDoGoogle />
+        {rotulo}
+      </button>
+    </form>
   );
 }
 
 /** O "G" colorido oficial, desenhado aqui para não depender de imagem de fora. */
 function LogoDoGoogle() {
   return (
-    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
       <path
         fill="#EA4335"
         d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"

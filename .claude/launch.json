@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "dindi",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "/Users/lya/.local/bin/npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
     }
