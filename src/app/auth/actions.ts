@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { appUrl, temEmail } from "@/lib/env";
+import { appUrl, env, temEmail } from "@/lib/env";
 import { emailDeSenha, mandarEmail } from "@/lib/email";
 
 export type ActionState = { error?: string; ok?: string } | null;
@@ -48,6 +48,12 @@ export async function signIn(_prev: ActionState, formData: FormData): Promise<Ac
 export async function signInWithGoogle(formData: FormData): Promise<void> {
   const next = safeNext(formData.get("next"));
 
+  // Confere se o Google está ligado ANTES de mandar a pessoa pra viagem.
+  // Sem isso, com o provedor desligado o guardião responde um erro cru na
+  // cara de quem clicou — visto em produção. A resposta fica guardada por
+  // um minuto, então ligar no painel destrava aqui quase na hora.
+  if (!(await googleLigado())) redirect("/entrar?erro=google");
+
   const supabase = await supabaseServer();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -58,6 +64,20 @@ export async function signInWithGoogle(formData: FormData): Promise<void> {
 
   if (error || !data?.url) redirect("/entrar?erro=google");
   redirect(data.url);
+}
+
+async function googleLigado(): Promise<boolean> {
+  try {
+    const resposta = await fetch(`${env.supabaseUrl}/auth/v1/settings`, {
+      headers: { apikey: env.supabaseAnonKey },
+      next: { revalidate: 60 },
+    });
+    if (!resposta.ok) return false;
+    const config = (await resposta.json()) as { external?: { google?: boolean } };
+    return config.external?.google === true;
+  } catch {
+    return false;
+  }
 }
 
 export async function signOut(): Promise<void> {
