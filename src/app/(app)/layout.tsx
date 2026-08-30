@@ -3,6 +3,7 @@ import { BotaoLancar } from "@/components/lancar";
 import { AvisoConectar } from "@/components/aviso-conectar";
 import { signOut } from "@/app/auth/actions";
 import { pageCtx } from "@/lib/ctx";
+import { claudeConectado } from "@/lib/auth";
 import { listAccounts, listCategories } from "@/lib/db/finance";
 import { today } from "@/lib/dates";
 
@@ -16,16 +17,13 @@ import { today } from "@/lib/dates";
  * O botão de anotar também mora aqui: ele acompanha você em qualquer tela.
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const { session, ctx } = await pageCtx();
-  const [contas, categorias, conexoes, ultimo] = await Promise.all([
+  const { ctx } = await pageCtx();
+  const [contas, categorias, conectado, ultimo] = await Promise.all([
     listAccounts(ctx),
     listCategories(ctx),
-    ctx.db
-      .from("oauth_tokens")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", session.userId)
-      .eq("token_type", "access")
-      .eq("revoked", false),
+    // A mesma pergunta que as telas vazias fazem; o cache() dela garante que
+    // o banco só responde uma vez por visita.
+    claudeConectado(),
     // Só a data do aviso mais recente: é tudo que o sino precisa saber, e é
     // uma consulta barata o bastante para rodar em toda tela.
     ctx.db
@@ -40,7 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <Shell
       ultimoAviso={ultimo.data?.last_sent ?? null}
-      aviso={(conexoes.count ?? 0) > 0 ? null : <AvisoConectar />}
+      aviso={conectado ? null : <AvisoConectar />}
       lancar={
         <BotaoLancar
           contas={contas.filter((c) => !c.archived)}

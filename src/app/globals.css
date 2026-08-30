@@ -82,17 +82,62 @@ body {
   }
 }
 
-@keyframes sobe {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: none;
+/* -------------------------------------------------------------------
+   As janelas do app: o menu (folha, de baixo) e o anotar (janela, no meio).
+
+   O <dialog> do navegador aparece e some de estalo, com cara de coisa
+   quebrada. Aqui a folha sobe e desce deslizando, a janela surge e some
+   num fade com um respiro de escala, e o escuro do fundo acompanha os
+   dois. Num navegador antigo, sem @starting-style, nada disso roda e as
+   janelas só abrem secas — feio, mas inteiro.
+   ------------------------------------------------------------------- */
+dialog.folha,
+dialog.janela {
+  transition:
+    translate 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    scale 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.25s ease,
+    display 0.3s allow-discrete,
+    overlay 0.3s allow-discrete;
+}
+
+dialog.folha:not([open]) {
+  translate: 0 100%;
+}
+dialog.folha[open] {
+  translate: 0 0;
+  @starting-style {
+    translate: 0 100%;
   }
 }
 
-.sobe {
-  animation: sobe 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+dialog.janela:not([open]) {
+  opacity: 0;
+  scale: 0.96;
+}
+dialog.janela[open] {
+  opacity: 1;
+  scale: 1;
+  @starting-style {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+dialog.folha::backdrop,
+dialog.janela::backdrop {
+  background: transparent;
+  transition:
+    background 0.3s ease,
+    display 0.3s allow-discrete,
+    overlay 0.3s allow-discrete;
+}
+dialog.folha[open]::backdrop,
+dialog.janela[open]::backdrop {
+  background: rgb(44 36 32 / 0.4);
+  @starting-style {
+    background: transparent;
+  }
 }
 
 @keyframes cai {
@@ -279,7 +324,6 @@ body {
   .surge,
   .pulinho,
   .cai,
-  .sobe,
   .cutuca,
   .balancinho,
   .flutua,
@@ -290,5 +334,11 @@ body {
   }
   .cai {
     display: none;
+  }
+  dialog.folha,
+  dialog.janela,
+  dialog.folha::backdrop,
+  dialog.janela::backdrop {
+    transition: none;
   }
 }

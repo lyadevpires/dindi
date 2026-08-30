@@ -57,7 +57,7 @@ export function BotaoLancar({
         }}
         // O `m-auto` é o que centraliza: o reset do Tailwind zera a margem que
         // o navegador dá de graça para o <dialog>.
-        className="m-auto w-[calc(100vw-2rem)] max-w-sm rounded-2xl border border-borda bg-white p-0 text-tinta backdrop:bg-tinta/40 backdrop:backdrop-blur-sm"
+        className="janela m-auto w-[calc(100vw-2rem)] max-w-sm rounded-2xl border border-borda bg-white p-0 text-tinta"
       >
         {/*
           Sem nenhuma conta não existe onde lançar. Em vez de esconder o botão

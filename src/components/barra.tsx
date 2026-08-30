@@ -83,10 +83,10 @@ export function Barra({ lancar, sair }: { lancar: React.ReactNode; sair: React.R
         onClick={(e) => {
           if (e.target === menu.current) menu.current?.close();
         }}
-        className="m-0 mt-auto w-full max-w-none rounded-t-3xl border-t border-borda bg-creme p-0 text-tinta backdrop:bg-tinta/40 backdrop:backdrop-blur-sm sm:mx-auto sm:max-w-lg"
+        className="folha m-0 mt-auto w-full max-w-none rounded-t-3xl border-t border-borda bg-creme p-0 text-tinta sm:mx-auto sm:max-w-lg"
       >
         <div
-          className="sobe px-5 pb-6 pt-3"
+          className="px-5 pb-6 pt-3"
           style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
         >
           <span aria-hidden className="mx-auto mb-4 block h-1 w-10 rounded-full bg-borda" />

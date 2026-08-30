@@ -4,6 +4,7 @@ import { getSession, getUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { isRegisteredRedirect, MCP_SCOPE } from "@/lib/oauth";
 import { authorize, denyAuthorization } from "./actions";
+import { BotaoDeEnvio } from "./botoes";
 
 export const metadata = { title: "Conectar o Claude — dindi" };
 export const dynamic = "force-dynamic";
@@ -145,24 +146,22 @@ export default async function AutorizarPage(props: PageProps<"/oauth/autorizar">
             {Object.entries(hidden).map(([k, v]) => (
               <input key={k} type="hidden" name={k} value={v} />
             ))}
-            <button
-              type="submit"
+            <BotaoDeEnvio
+              rotulo="Agora não"
+              rotuloOcupado="Voltando..."
               className="w-full rounded-xl border border-borda px-4 py-3 text-sm font-semibold transition hover:bg-areia"
-            >
-              Agora não
-            </button>
+            />
           </form>
 
           <form action={authorize} className="flex-1">
             {Object.entries(hidden).map(([k, v]) => (
               <input key={k} type="hidden" name={k} value={v} />
             ))}
-            <button
-              type="submit"
+            <BotaoDeEnvio
+              rotulo="Permitir"
+              rotuloOcupado="Conectando..."
               className="w-full rounded-xl bg-verdinho px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90"
-            >
-              Permitir
-            </button>
+            />
           </form>
         </div>
       </div>

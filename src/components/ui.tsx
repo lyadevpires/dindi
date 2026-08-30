@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Dindi, type Humor } from "@/components/dindi";
+import { claudeConectado } from "@/lib/auth";
 
 /** Peças visuais reutilizadas em todas as telas. */
 
@@ -41,8 +42,12 @@ export function SectionTitle({
  * Quase todo vazio aqui termina em "peça pro Claude" — e isso é um beco sem
  * saída para quem ainda não conectou. Por isso o caminho vem junto, a não ser
  * que a própria tela já esteja oferecendo ele (`semLink`).
+ *
+ * Para quem já conectou, oferecer "Conectar o Claude" seria conversa de quem
+ * não estava prestando atenção — o convite vira só um lembrete de que é pedir
+ * lá.
  */
-export function Empty({
+export async function Empty({
   children,
   semLink = false,
   humor = "atento",
@@ -54,15 +59,21 @@ export function Empty({
   /** Para telas que já mostram o porquinho perto — ele não precisa aparecer duas vezes. */
   semDindi?: boolean;
 }) {
+  const conectado = semLink ? false : await claudeConectado();
+
   if (semDindi) {
     return (
       <div className="rounded-2xl border border-dashed border-borda bg-areia/40 px-4 py-6 text-center text-sm text-suave">
         {children}
         {semLink ? null : (
           <p className="mt-2">
-            <Link href="/conectar" className="underline underline-offset-2">
-              Conectar o Claude
-            </Link>
+            {conectado ? (
+              "Seu Claude já está conectado — é só pedir por lá."
+            ) : (
+              <Link href="/conectar" className="underline underline-offset-2">
+                Conectar o Claude
+              </Link>
+            )}
           </p>
         )}
       </div>
@@ -79,11 +90,15 @@ export function Empty({
         <div className="relative w-full rounded-2xl border border-borda bg-white px-4 py-3.5 text-center text-sm text-suave sm:text-left">
           <span
             aria-hidden
-            className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-borda bg-white sm:left-auto sm:-left-1.5 sm:top-1/2 sm:-translate-x-0 sm:-translate-y-1/2 sm:border-l sm:border-t-0 sm:border-b sm:border-r-0"
+            className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-borda bg-white sm:-left-1.5 sm:top-1/2 sm:translate-x-0 sm:-translate-y-1/2 sm:border-b sm:border-t-0"
           />
           <span className="relative block">{children}</span>
 
-          {semLink ? null : (
+          {semLink ? null : conectado ? (
+            <span className="relative mt-2 block text-suave">
+              Seu Claude já está conectado — é só pedir por lá.
+            </span>
+          ) : (
             <Link
               href="/conectar"
               className="relative mt-2 inline-block font-medium text-tinta underline underline-offset-2"

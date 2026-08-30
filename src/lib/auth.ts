@@ -62,6 +62,28 @@ export const getSession = cache(async (): Promise<SessionInfo | null> => {
   };
 });
 
+/**
+ * O Claude desta pessoa já está conectado?
+ *
+ * É o que decide se uma tela vazia oferece "Conectar o Claude" ou apenas
+ * lembra que é só pedir lá. O `cache()` faz a pergunta uma vez por visita,
+ * mesmo que vários cantos da mesma tela queiram saber.
+ */
+export const claudeConectado = cache(async (): Promise<boolean> => {
+  const user = await getUser();
+  if (!user) return false;
+
+  const supabase = await supabaseServer();
+  const { count } = await supabase
+    .from("oauth_tokens")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("token_type", "access")
+    .eq("revoked", false);
+
+  return (count ?? 0) > 0;
+});
+
 /** Igual ao getSession, mas manda para o login/onboarding se faltar algo. */
 export async function requireSession(): Promise<SessionInfo> {
   if (!(await getUser())) redirect("/entrar");
