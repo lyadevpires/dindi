@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Dindi } from "@/components/dindi";
 import { BotaoGoogle } from "@/components/entrar-google";
@@ -14,8 +13,9 @@ export const metadata = { title: "Entrar — dindi" };
  * pra se perder no spam. Quem é novo cai no "como a gente te chama?" logo
  * depois; quem já é de casa cai direto no extrato.
  *
- * Email e senha não sumiu: virou a porta dos fundos (/entrar/senha), num link
- * pequeno, para quem criou conta antes do Google chegar.
+ * Email e senha não sumiu de vez: /entrar/senha continua no ar, mas sem nenhum
+ * link apontando para lá — é uma porta escondida, para mandar no privado a quem
+ * criou conta antes do Google chegar e precisar dela.
  */
 export default async function EntrarPage(props: PageProps<"/entrar">) {
   const params = await props.searchParams;
@@ -53,15 +53,6 @@ export default async function EntrarPage(props: PageProps<"/entrar">) {
         ) : null}
 
         <BotaoGoogle next={next} rotulo="Continuar com o Google" />
-
-        <p className="mt-4 text-center text-sm text-suave">
-          <Link
-            href={`/entrar/senha?next=${encodeURIComponent(next)}`}
-            className="underline underline-offset-2"
-          >
-            Já uso email e senha
-          </Link>
-        </p>
       </div>
     </main>
   );
