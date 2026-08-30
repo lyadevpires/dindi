@@ -25,8 +25,11 @@ export async function GET(request: Request) {
   }
 
   const db = supabaseAdmin();
+  // `select("*")` e não `select("id")`: nem toda tabela tem coluna `id` —
+  // household_members usa chave composta, e pedir "id" ali devolvia vazio,
+  // fazendo parecer que ninguém tinha terminado o cadastro.
   const contar = async (tabela: string) => {
-    const { count } = await db.from(tabela).select("id", { count: "exact", head: true });
+    const { count } = await db.from(tabela).select("*", { count: "exact", head: true });
     return count ?? 0;
   };
 
@@ -46,7 +49,7 @@ export async function GET(request: Request) {
     contar("households"),
     contar("household_members"),
     contar("transactions"),
-    db.from("transactions").select("id", { count: "exact", head: true }).gte("date", mes),
+    db.from("transactions").select("*", { count: "exact", head: true }).gte("date", mes),
     contar("push_subscriptions"),
     contar("goals"),
     contar("accounts"),
