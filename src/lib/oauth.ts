@@ -94,9 +94,26 @@ export async function verifyAccessToken(token: string): Promise<TokenOwner | nul
     .eq("token_hash", hashToken(token))
     .then(() => {});
 
+  /*
+   * O dindi certo é o de AGORA, não o do dia da conexão.
+   *
+   * O token guardava um retrato do household na hora que a pessoa conectou o
+   * Claude. Só que o dindi de alguém muda: ela aceita um convite, migra as
+   * coisas para o dindi de outra pessoa. Quando isso acontecia, o Claude
+   * continuava lendo o dindi antigo — o marido conectado via só as coisas dele
+   * e não as da esposa que tinha acabado de entrar no mesmo dindi. Então
+   * perguntamos ao banco de qual dindi a pessoa faz parte agora.
+   */
+  const { data: membro } = await db
+    .from("household_members")
+    .select("household_id")
+    .eq("user_id", data.user_id)
+    .limit(1)
+    .maybeSingle();
+
   return {
     userId: data.user_id,
-    householdId: data.household_id,
+    householdId: membro?.household_id ?? data.household_id,
     clientId: data.client_id,
     scope: data.scope,
   };
