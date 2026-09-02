@@ -147,8 +147,13 @@ export default async function Ajustes() {
                       {c.archived ? " (arquivada)" : ""}
                     </p>
                     <p className="text-xs text-suave">
-                      {TIPO[c.type]} · {c.owner ?? "conjunta"}
-                      {c.type === "credit_card" && c.closing_day
+                      {c.tem_debito && c.tem_credito
+                        ? "conta + cartão"
+                        : c.tem_credito
+                          ? "cartão de crédito"
+                          : TIPO[c.type]}{" "}
+                      · {c.owner ?? "conjunta"}
+                      {c.tem_credito && c.closing_day
                         ? ` · fecha dia ${c.closing_day}, vence dia ${c.due_day}`
                         : ""}
                     </p>

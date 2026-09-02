@@ -94,7 +94,7 @@ export async function GET(request: Request) {
   const { data: cartoes, error: cartoesErr } = await db
     .from("accounts")
     .select("*")
-    .eq("type", "credit_card")
+    .eq("tem_credito", true)
     .eq("archived", false);
 
   if (cartoesErr) {

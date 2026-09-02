@@ -39,12 +39,19 @@ export type Account = {
   household_id: string;
   name: string;
   type: AccountType;
+  /** Tem saldo: recebe dinheiro e paga no débito na hora. */
+  tem_debito: boolean;
+  /** Tem fatura: a compra no crédito entra e fecha depois. */
+  tem_credito: boolean;
   owner_user_id: string | null;
   closing_day: number | null;
   due_day: number | null;
   opening_balance: number | string;
   archived: boolean;
 };
+
+/** Como um gasto foi pago numa conta que é os dois. O padrão é débito. */
+export type Via = "credito" | "debito";
 
 export type Category = {
   id: string;

@@ -18,7 +18,7 @@ export default async function Cartoes(props: PageProps<"/cartoes">) {
   const mes = monthStart(/^\d{4}-\d{2}/.test(bruto) ? `${bruto.slice(0, 7)}-01` : today());
 
   const contas = await listAccounts(ctx);
-  const cartoes = contas.filter((c) => c.type === "credit_card" && !c.archived);
+  const cartoes = contas.filter((c) => c.tem_credito && !c.archived);
 
   const faturas = await Promise.all(
     cartoes.map((c) => getInvoice(ctx, c.id, mes).catch(() => null))

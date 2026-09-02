@@ -75,8 +75,14 @@ export function registerDindiTools(server: McpServer, ctx: Ctx) {
           .filter((a) => !a.archived)
           .map((a) => ({
             nome: a.name,
-            tipo: a.type,
-            ...(a.type === "credit_card"
+            // O que a conta faz, em vez do sabor cru: débito, crédito ou os dois.
+            modo:
+              a.tem_debito && a.tem_credito
+                ? "débito e crédito"
+                : a.tem_credito
+                  ? "só crédito"
+                  : "só débito",
+            ...(a.tem_credito
               ? { fecha_dia: a.closing_day, vence_dia: a.due_day }
               : {}),
           })),
@@ -115,6 +121,12 @@ export function registerDindiTools(server: McpServer, ctx: Ctx) {
           .optional()
           .describe("Nome da categoria. Se não existir, crio. Infira pelo contexto e confirme com a pessoa."),
         account: z.string().optional().describe("Nome da conta ou cartão."),
+        via: z
+          .enum(["credito", "debito"])
+          .optional()
+          .describe(
+            "Só importa numa conta que é débito E crédito (tipo Nubank PJ). 'credito' entra na fatura; 'debito' sai do saldo na hora. Se a pessoa não disser, deixe vazio — o padrão é débito."
+          ),
         person: z.string().optional().describe("Quem pagou. Se não informar, assumo quem está falando."),
         note: z.string().optional(),
       }),
@@ -137,6 +149,10 @@ export function registerDindiTools(server: McpServer, ctx: Ctx) {
         account: z.string().optional(),
         person: z.string().optional(),
         type: z.enum(["expense", "income"]).optional(),
+        via: z
+          .enum(["credito", "debito"])
+          .optional()
+          .describe("Numa conta débito+crédito, move o gasto entre a fatura e o saldo."),
       }),
     },
     safe((args) => fin.editTransaction(ctx, args))
@@ -229,23 +245,48 @@ export function registerDindiTools(server: McpServer, ctx: Ctx) {
     {
       title: "Criar conta ou cartão",
       description:
-        "Cria uma conta corrente, poupança ou cartão de crédito. Para cartão, é obrigatório saber o dia que a fatura fecha e o dia que vence — pergunte se a pessoa não disser.",
+        "Cria uma conta corrente, poupança ou cartão. Uma conta pode ser débito, crédito, ou os DOIS — no Brasil o banco costuma ser tudo junto (Nubank, Inter, C6: a conta onde cai o salário E o cartão que fecha fatura). Se tiver crédito, é obrigatório saber o dia que a fatura fecha e o dia que vence — pergunte se a pessoa não disser.",
       inputSchema: z.object({
         name: z.string().min(1).describe("Ex: 'Nubank', 'Conta conjunta'"),
         type: z.enum(["checking", "savings", "credit_card"]),
+        tem_debito: z
+          .boolean()
+          .optional()
+          .describe("Tem saldo (recebe salário, paga no débito). Se não disser, deduzo pelo type."),
+        tem_credito: z
+          .boolean()
+          .optional()
+          .describe("Tem cartão de crédito (fecha fatura). Se não disser, deduzo pelo type. Marque true junto com tem_debito para uma conta que é os dois."),
         owner: z
           .string()
           .optional()
           .describe("Nome da pessoa dona, ou 'conjunta' se for de todo mundo que divide este dindi."),
-        closing_day: z.number().int().min(1).max(31).optional().describe("Só para cartão."),
-        due_day: z.number().int().min(1).max(31).optional().describe("Só para cartão."),
+        closing_day: z.number().int().min(1).max(31).optional().describe("Dia que a fatura fecha. Obrigatório se tem crédito."),
+        due_day: z.number().int().min(1).max(31).optional().describe("Dia que a fatura vence. Obrigatório se tem crédito."),
         opening_balance: z
           .number()
           .optional()
-          .describe("Quanto já tem na conta hoje. Só para conta corrente/poupança."),
+          .describe("Quanto já tem na conta hoje. Só faz sentido se tem débito."),
       }),
     },
     safe((args) => fin.createAccount(ctx, args))
+  );
+
+  server.registerTool(
+    "set_account_modes",
+    {
+      title: "Ligar/desligar débito ou crédito de uma conta",
+      description:
+        "Ajusta o que uma conta que já existe sabe fazer. Serve para consertar uma conta que entrou como 'só cartão' mas na vida real também é a conta onde cai o salário: ligue o débito nela. Ligar o crédito exige o dia de fechamento e de vencimento da fatura.",
+      inputSchema: z.object({
+        account: z.string().describe("Nome da conta a ajustar."),
+        tem_debito: z.boolean().optional().describe("Ligar (true) ou desligar (false) o saldo/débito."),
+        tem_credito: z.boolean().optional().describe("Ligar (true) ou desligar (false) o cartão/fatura."),
+        closing_day: z.number().int().min(1).max(31).optional(),
+        due_day: z.number().int().min(1).max(31).optional(),
+      }),
+    },
+    safe((args) => fin.setAccountModes(ctx, args))
   );
 
   server.registerTool(
@@ -569,6 +610,15 @@ Como se comportar:
 6. Compra parcelada é add_credit_card_purchase com o valor TOTAL e o número
    de parcelas — não multiplique nem divida na mão. Se ela falar
    "5x de 300", o total é 1500.
+
+   Conta que é débito E crédito (o "modo" aparece no get_context): no Brasil o
+   banco costuma ser tudo junto — o Nubank PJ é a conta onde cai o salário E o
+   cartão. Nessas contas, um gasto pode ser no crédito (vai pra fatura) ou no
+   débito (sai do saldo na hora): passe "via" no add_transaction. No silêncio,
+   o dindi assume débito — então só marque "credito" quando a pessoa disser que
+   foi no crédito. Salário e qualquer entrada sempre caem no débito.
+   Se uma conta entrou como "só cartão" mas a pessoa recebe salário nela, é
+   sinal de que ela também é conta: use set_account_modes para ligar o débito.
 
 7. Ao responder sobre dinheiro, interprete os números. Em vez de listar
    categorias, diga o que chama atenção: o que subiu, o que está perto de

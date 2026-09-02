@@ -20,7 +20,20 @@ import { formatBRL } from "@/lib/money";
 
 /* ------------------------------------------------------------------ */
 
-type Conta = { account: string; type: string; balance: number };
+type Conta = {
+  account: string;
+  type: string;
+  balance: number;
+  tem_debito?: boolean;
+  tem_credito?: boolean;
+};
+
+/** O rótulo entre parênteses ao lado do nome da conta. */
+function sabor(c: Conta): string {
+  if (c.tem_debito && c.tem_credito) return " (conta + cartão)";
+  if (c.tem_credito) return " (cartão)";
+  return "";
+}
 
 export function Saldo({
   total,
@@ -95,7 +108,7 @@ export function Saldo({
                 <li key={c.account} className="flex items-center justify-between gap-3 text-sm">
                   <span className="min-w-0 truncate text-creme/70">
                     {c.account}
-                    {c.type === "credit_card" ? " (cartão)" : ""}
+                    {sabor(c)}
                   </span>
                   <span className="tabular shrink-0 font-semibold">
                     {formatBRL(c.balance)}

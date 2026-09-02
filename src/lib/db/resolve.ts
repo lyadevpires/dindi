@@ -80,10 +80,14 @@ export async function allMembers(ctx: Ctx): Promise<Member[]> {
 export async function resolveAccount(
   ctx: Ctx,
   query: string | undefined | null,
-  opts: { type?: Account["type"]; required?: boolean } = {}
+  opts: { type?: Account["type"]; credito?: boolean; required?: boolean } = {}
 ): Promise<Account | null> {
   const accounts = (await allAccounts(ctx)).filter((a) => !a.archived);
-  const pool = opts.type ? accounts.filter((a) => a.type === opts.type) : accounts;
+  // `credito` filtra por capacidade (serve conta híbrida também); `type` ainda
+  // filtra pelo sabor exato, quando alguém precisa disso.
+  let pool = accounts;
+  if (opts.credito) pool = pool.filter((a) => a.tem_credito);
+  if (opts.type) pool = pool.filter((a) => a.type === opts.type);
 
   if (!query) {
     if (pool.length === 1) return pool[0];

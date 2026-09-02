@@ -91,7 +91,7 @@ export async function calcularConquistas(ctx: Ctx): Promise<{
 
   /* ---------------- sonhos e cartão ---------------- */
   const sonhos = metas.filter((m) => m.kind === "sonho");
-  const temCartao = contas.some((c) => c.type === "credit_card" && !c.archived);
+  const temCartao = contas.some((c) => c.tem_credito && !c.archived);
   const fatura = num(saldos.total_credit_card_debt);
 
   const c = (x: Conquista) => x;

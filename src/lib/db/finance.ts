@@ -25,6 +25,7 @@ import {
   type Ctx,
   type Invoice,
   type TxType,
+  type Via,
 } from "./types";
 
 // =====================================================================
@@ -40,7 +41,22 @@ export type AddTransactionInput = {
   account?: string;
   person?: string;
   note?: string;
+  /** Numa conta que é débito e crédito, como o gasto foi pago. Padrão: débito. */
+  via?: Via;
 };
+
+/**
+ * O gasto entra no crédito (vira fatura) ou no débito (sai do saldo na hora)?
+ *
+ * Conta só de crédito: sempre crédito. Só de débito: sempre débito. Sendo os
+ * dois, vale o que a pessoa disse — e, no silêncio, débito, que é o dia a dia.
+ * Entrada (salário, estorno) nunca é fatura.
+ */
+function ehNoCredito(account: Account, type: TxType, via?: Via): boolean {
+  if (type === "income" || !account.tem_credito) return false;
+  if (!account.tem_debito) return true;
+  return via === "credito";
+}
 
 export async function addTransaction(ctx: Ctx, input: AddTransactionInput) {
   if (!(input.amount > 0)) throw new DindiError("O valor precisa ser maior que zero.");
@@ -50,9 +66,9 @@ export async function addTransaction(ctx: Ctx, input: AddTransactionInput) {
   const account = await resolveAccount(ctx, input.account, { required: true })!;
   if (!account) throw new DindiError("Preciso saber em qual conta lançar.");
 
-  if (account.type === "credit_card" && type === "income") {
+  if (type === "income" && !account.tem_debito) {
     throw new DindiError(
-      "Não dá para lançar receita em cartão de crédito. Se foi estorno, use editar/apagar a despesa."
+      `A conta "${account.name}" é só cartão de crédito, não tem onde o dinheiro cair. Se ela também é sua conta (recebe salário), me diga que eu ligo o débito nela; se foi estorno, edite ou apague a despesa.`
     );
   }
 
@@ -62,10 +78,9 @@ export async function addTransaction(ctx: Ctx, input: AddTransactionInput) {
   });
   const personId = await resolvePerson(ctx, input.person);
 
-  const invoiceMonth =
-    account.type === "credit_card"
-      ? invoiceMonthFor(date, account.closing_day!)
-      : null;
+  const invoiceMonth = ehNoCredito(account, type, input.via)
+    ? invoiceMonthFor(date, account.closing_day!)
+    : null;
 
   const { data, error } = await ctx.db
     .from("transactions")
@@ -117,6 +132,7 @@ export type EditTransactionInput = {
   account?: string;
   person?: string;
   type?: TxType;
+  via?: Via;
 };
 
 export async function editTransaction(ctx: Ctx, input: EditTransactionInput) {
@@ -159,20 +175,23 @@ export async function editTransaction(ctx: Ctx, input: EditTransactionInput) {
   const accounts = await allAccounts(ctx);
   const finalAccount = accounts.find((a) => a.id === finalAccountId)!;
 
-  // O mesmo freio do addTransaction, que aqui faltava: entrada não vive em
-  // cartão. Sem isto, editar um lançamento conseguia empurrar um salário para
-  // dentro de um cartão — e aí o dinheiro sumia da conta e ainda inchava a
+  // O mesmo freio do addTransaction, que aqui faltava: entrada só cai onde há
+  // débito. Sem isto, editar um lançamento conseguia empurrar um salário para
+  // dentro de um cartão sem conta — e aí o dinheiro sumia e ainda inchava a
   // fatura. Se foi estorno, o certo é editar ou apagar a despesa original.
-  if (finalAccount.type === "credit_card" && finalType === "income") {
+  if (finalType === "income" && !finalAccount.tem_debito) {
     throw new DindiError(
-      "Não dá para deixar uma entrada num cartão de crédito. Se foi estorno, edite ou apague a despesa."
+      `A conta "${finalAccount.name}" é só cartão, não recebe dinheiro. Se foi estorno, edite ou apague a despesa.`
     );
   }
 
-  patch.invoice_month =
-    finalAccount.type === "credit_card"
-      ? invoiceMonthFor(finalDate, finalAccount.closing_day!)
-      : null;
+  // Numa conta que é os dois, o "via" vale; no silêncio, mantém o que já era
+  // (crédito se já tinha fatura, débito se não).
+  const finalVia: Via | undefined =
+    input.via ?? (existing.invoice_month ? "credito" : "debito");
+  patch.invoice_month = ehNoCredito(finalAccount, finalType, finalVia)
+    ? invoiceMonthFor(finalDate, finalAccount.closing_day!)
+    : null;
 
   const { data, error } = await ctx.db
     .from("transactions")
@@ -331,47 +350,52 @@ export async function getBalance(ctx: Ctx, accountQuery?: string) {
   const result = target.map((acc) => {
     const mine = (txs ?? []).filter((t) => t.account_id === acc.id);
 
-    if (acc.type === "credit_card") {
-      // Dívida em aberto = despesas que ainda estão em faturas não pagas.
-      const open = mine.filter(
-        (t) => !paidKeys.has(`${acc.id}|${t.invoice_month}`)
+    // Lado do débito: o dinheiro que está na conta. Entra receita, saem os
+    // gastos de débito (sem fatura) e o que foi pagar faturas. Uma conta que
+    // não tem débito (cartão puro) fica com saldo zero deste lado.
+    let saldo = 0;
+    if (acc.tem_debito) {
+      const income = mine
+        .filter((t) => t.type === "income")
+        .reduce((s, t) => s + num(t.amount), 0);
+      const debitoGasto = mine
+        .filter((t) => t.type === "expense" && !t.invoice_month)
+        .reduce((s, t) => s + num(t.amount), 0);
+      const invoicesPaid = outflows.get(acc.id) ?? 0;
+      saldo = round2(num(acc.opening_balance) + income - debitoGasto - invoicesPaid);
+    }
+
+    // Lado do crédito: a fatura em aberto. Só as compras no crédito
+    // (invoice_month preenchido) que ainda não foram pagas. Despesa soma;
+    // entrada (estorno) abate — nunca deixamos uma entrada inflar o que se
+    // deve. Conta sem crédito não tem fatura.
+    let owed = 0;
+    if (acc.tem_credito) {
+      const abertas = mine.filter(
+        (t) => t.invoice_month && !paidKeys.has(`${acc.id}|${t.invoice_month}`)
       );
-      // Despesa soma na fatura; entrada (um estorno mal lançado, por exemplo)
-      // abate. Antes somávamos tudo às cegas, então uma entrada de R$ 12 mil
-      // parada num cartão era contada como R$ 12 mil de dívida — o oposto do
-      // que ela é. Nunca deixamos uma entrada inflar o que se deve.
-      const liquido = open.reduce(
+      const liquido = abertas.reduce(
         (s, t) => s + (t.type === "income" ? -num(t.amount) : num(t.amount)),
         0
       );
-      const owed = round2(Math.max(liquido, 0));
-      return {
-        account: acc.name,
-        type: acc.type,
-        // saldo negativo = o quanto você deve; positivo = crédito a seu favor
-        balance: round2(-liquido),
-        open_invoice_debt: owed,
-      };
+      owed = round2(Math.max(liquido, 0));
     }
-
-    const income = mine.filter((t) => t.type === "income").reduce((s, t) => s + num(t.amount), 0);
-    const expense = mine.filter((t) => t.type === "expense").reduce((s, t) => s + num(t.amount), 0);
-    const invoicesPaid = outflows.get(acc.id) ?? 0;
 
     return {
       account: acc.name,
       type: acc.type,
-      balance: round2(num(acc.opening_balance) + income - expense - invoicesPaid),
-      open_invoice_debt: 0,
+      tem_debito: acc.tem_debito,
+      tem_credito: acc.tem_credito,
+      // A linha "conta por conta" mostra o dinheiro de quem tem débito; de um
+      // cartão puro, mostra o quanto se deve (negativo).
+      balance: acc.tem_debito ? saldo : round2(-owed),
+      saldo,
+      open_invoice_debt: owed,
     };
   });
 
-  const liquid = round2(
-    result.filter((r) => r.type !== "credit_card").reduce((s, r) => s + r.balance, 0)
-  );
-  const cardDebt = round2(
-    result.filter((r) => r.type === "credit_card").reduce((s, r) => s + r.open_invoice_debt, 0)
-  );
+  const liquid = round2(result.reduce((s, r) => s + r.saldo, 0));
+  const cardDebt = round2(result.reduce((s, r) => s + r.open_invoice_debt, 0));
 
   return {
     accounts: result,
@@ -394,12 +418,23 @@ export async function createAccount(
     closing_day?: number;
     due_day?: number;
     opening_balance?: number;
+    /** Sobrescreve o que o `type` sugere — para a conta que é os dois. */
+    tem_debito?: boolean;
+    tem_credito?: boolean;
   }
 ) {
-  if (input.type === "credit_card" && (!input.closing_day || !input.due_day)) {
+  // O `type` dá o palpite; se a pessoa disser os modos, eles mandam. Assim o
+  // Nubank PJ pode ser "conta corrente" (type) e ainda ter crédito.
+  const temDebito = input.tem_debito ?? input.type !== "credit_card";
+  const temCredito = input.tem_credito ?? input.type === "credit_card";
+
+  if (temCredito && (!input.closing_day || !input.due_day)) {
     throw new DindiError(
-      "Para cartão de crédito preciso do dia de fechamento e do dia de vencimento da fatura."
+      "Para uma conta com crédito preciso do dia de fechamento e do dia de vencimento da fatura."
     );
+  }
+  if (!temDebito && !temCredito) {
+    throw new DindiError("A conta precisa ser pelo menos débito ou crédito.");
   }
 
   const owner =
@@ -413,11 +448,56 @@ export async function createAccount(
       household_id: ctx.householdId,
       name: input.name.trim(),
       type: input.type,
+      tem_debito: temDebito,
+      tem_credito: temCredito,
       owner_user_id: owner,
       closing_day: input.closing_day ?? null,
       due_day: input.due_day ?? null,
       opening_balance: round2(input.opening_balance ?? 0),
     })
+    .select("*")
+    .single();
+  if (error) throw new DindiError(error.message);
+  return data;
+}
+
+/**
+ * Liga ou desliga o débito/crédito de uma conta que já existe.
+ *
+ * É o caminho para consertar um Nubank PJ que entrou como "só cartão": liga o
+ * débito nele e o salário passa a poder cair ali. Ligar o crédito exige os
+ * dias da fatura.
+ */
+export async function setAccountModes(
+  ctx: Ctx,
+  input: { account: string; tem_debito?: boolean; tem_credito?: boolean; closing_day?: number; due_day?: number }
+) {
+  const acc = (await resolveAccount(ctx, input.account, { required: true }))!;
+  const temDebito = input.tem_debito ?? acc.tem_debito;
+  const temCredito = input.tem_credito ?? acc.tem_credito;
+
+  if (!temDebito && !temCredito) {
+    throw new DindiError("A conta precisa ser pelo menos débito ou crédito.");
+  }
+
+  const closing = input.closing_day ?? acc.closing_day;
+  const due = input.due_day ?? acc.due_day;
+  if (temCredito && (!closing || !due)) {
+    throw new DindiError(
+      "Para ligar o crédito preciso do dia de fechamento e do dia de vencimento da fatura."
+    );
+  }
+
+  const { data, error } = await ctx.db
+    .from("accounts")
+    .update({
+      tem_debito: temDebito,
+      tem_credito: temCredito,
+      closing_day: temCredito ? closing : acc.closing_day,
+      due_day: temCredito ? due : acc.due_day,
+    })
+    .eq("id", acc.id)
+    .eq("household_id", ctx.householdId)
     .select("*")
     .single();
   if (error) throw new DindiError(error.message);
@@ -431,6 +511,8 @@ export async function listAccounts(ctx: Ctx) {
     id: a.id,
     name: a.name,
     type: a.type,
+    tem_debito: a.tem_debito,
+    tem_credito: a.tem_credito,
     owner: a.owner_user_id ? memberName.get(a.owner_user_id) ?? null : "conjunta",
     closing_day: a.closing_day,
     due_day: a.due_day,
@@ -689,7 +771,7 @@ export async function addParcelado(
   const card = await resolveAccount(ctx, input.card ?? input.account, { required: true })!;
   if (!card) throw new DindiError("Preciso saber em qual conta ou cartão foi a compra.");
 
-  const noCartao = card.type === "credit_card";
+  const noCartao = card.tem_credito;
   if (noCartao && !card.closing_day) {
     throw new DindiError(
       `Não sei o dia de fechamento do ${card.name}. Me conta que dia ele fecha e que dia vence.`
@@ -874,7 +956,7 @@ async function ensureInvoice(
 }
 
 export async function getInvoice(ctx: Ctx, cardQuery?: string, month?: string) {
-  const card = await resolveAccount(ctx, cardQuery, { type: "credit_card", required: true })!;
+  const card = await resolveAccount(ctx, cardQuery, { credito: true, required: true })!;
   if (!card) throw new DindiError("Preciso saber qual cartão.");
 
   const referenceMonth = month
@@ -923,7 +1005,7 @@ export async function payInvoice(
   ctx: Ctx,
   input: { card?: string; month?: string; from_account?: string }
 ) {
-  const card = await resolveAccount(ctx, input.card, { type: "credit_card", required: true })!;
+  const card = await resolveAccount(ctx, input.card, { credito: true, required: true })!;
   const referenceMonth = input.month
     ? monthStart(input.month)
     : invoiceMonthFor(today(), card!.closing_day!);
