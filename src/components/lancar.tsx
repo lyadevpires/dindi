@@ -42,7 +42,7 @@ export function BotaoLancar({
         type="button"
         onClick={() => dialogo.current?.showModal()}
         aria-label="Anotar um gasto"
-        className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-creme bg-rosinha-forte text-3xl leading-none text-tinta shadow-md transition hover:brightness-95 active:scale-95"
+        className="flex h-[54px] w-[54px] -translate-y-4 items-center justify-center rounded-full bg-rosa text-3xl leading-none text-tinta shadow-[0_10px_22px_-8px_rgba(226,127,112,0.9)] ring-[5px] ring-creme transition hover:brightness-95 active:scale-95"
       >
         <span aria-hidden className="-mt-0.5">
           +

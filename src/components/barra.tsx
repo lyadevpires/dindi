@@ -47,17 +47,21 @@ export function Barra({ lancar, sair }: { lancar: React.ReactNode; sair: React.R
 
   return (
     <>
+      {/*
+        Barra flutuante: descolada das bordas, branca e sólida, com uma sombra
+        que a levanta do fundo. Cara de aplicativo, não de rodapé de site.
+      */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-borda bg-creme/95 backdrop-blur"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        className="fixed inset-x-3 z-40"
+        style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
-        <ul className="mx-auto flex w-full max-w-lg items-end justify-around px-2 pb-2.5 pt-3">
+        <ul className="mx-auto flex h-16 w-full max-w-lg items-center justify-around rounded-[24px] bg-white px-2 shadow-[0_14px_30px_-16px_rgba(46,33,28,0.4),0_0_0_1px_rgba(46,33,28,0.04)]">
           {ABAS.slice(0, 2).map((a) => (
             <Aba key={a.href} {...a} ativa={ehAtiva(pathname, a.href)} />
           ))}
 
           {/* O + sobe para fora da barra: é ação, não destino. */}
-          <li className="-mt-6 shrink-0">{lancar}</li>
+          <li className="shrink-0">{lancar}</li>
 
           {ABAS.slice(2).map((a) => (
             <Aba key={a.href} {...a} ativa={ehAtiva(pathname, a.href)} />
@@ -67,12 +71,12 @@ export function Barra({ lancar, sair }: { lancar: React.ReactNode; sair: React.R
             <button
               type="button"
               onClick={() => menu.current?.showModal()}
-              className={`flex w-[4.5rem] flex-col items-center gap-1.5 rounded-xl px-1 py-2 transition ${
-                noMenu ? "text-tinta" : "text-suave"
+              className={`flex w-[4.25rem] flex-col items-center gap-1 rounded-xl px-1 py-1.5 transition ${
+                noMenu ? "text-tinta" : "text-apagado"
               }`}
             >
               <Tracos ativa={noMenu} />
-              <span className="text-xs font-medium leading-none">Menu</span>
+              <span className="fonte-display text-[10px] font-semibold leading-none">Menu</span>
             </button>
           </li>
         </ul>
@@ -146,15 +150,15 @@ function Aba({
     <li>
       <Link
         href={href}
-        className={`flex w-[4.5rem] flex-col items-center gap-1.5 rounded-xl px-1 py-2 transition ${
-          ativa ? "text-tinta" : "text-suave"
+        className={`flex w-[4.25rem] flex-col items-center gap-1 rounded-xl px-1 py-1.5 transition ${
+          ativa ? "text-tinta" : "text-apagado"
         }`}
       >
         <span className="relative">
           <Icone ativa={ativa} />
           <Carregando />
         </span>
-        <span className="text-xs font-medium leading-none">{label}</span>
+        <span className="fonte-display text-[10px] font-semibold leading-none">{label}</span>
       </Link>
     </li>
   );
@@ -187,7 +191,7 @@ function Base({ children, ativa }: { children: React.ReactNode; ativa: boolean }
       width="26"
       height="26"
       viewBox="0 0 24 24"
-      fill={ativa ? "var(--color-rosinha)" : "none"}
+      fill={ativa ? "var(--color-rosa)" : "none"}
       stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"

@@ -1,15 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Outfit, Figtree } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Outfit é a fonte de exibição — títulos, valores, rótulos, nomes. Figtree é a
+// de corpo — parágrafos, descrições, metadados. Foi o par escolhido no redesign.
+const outfit = Outfit({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const figtree = Figtree({
+  variable: "--font-body",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -22,7 +26,7 @@ export const metadata: Metadata = {
 
 /** A cor da barra do celular. Igual ao fundo, para não existir emenda. */
 export const viewport: Viewport = {
-  themeColor: "#fdf8f3",
+  themeColor: "#FCF5EA",
   // Deixar dar zoom num número é bom; esticar a tela toda, não.
   maximumScale: 5,
 };
@@ -31,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="pt-BR"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${outfit.variable} ${figtree.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">{children}</body>
     </html>

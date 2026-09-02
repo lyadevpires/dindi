@@ -4,41 +4,71 @@
    Cores do dindi. Mexa aqui e o app inteiro muda de cara.
    ------------------------------------------------------------------- */
 @theme {
-  --color-creme: #fdf8f3;
-  --color-areia: #f2e8dc;
-  --color-borda: #e6dacb;
-  --color-tinta: #2c2420;
-  --color-suave: #7a6a5e;
+  /* Neutros de fundo e superfície. */
+  --color-creme: #fcf5ea; /* fundo do app */
+  --color-areia: #f3e7d6; /* superfície bege suave (chips, trilhos) */
+  --color-borda: #f4ebde; /* divisor / borda fina */
+  --color-tinta: #2e211c; /* texto forte */
+  --color-medio: #5d4b42; /* texto médio */
+  --color-suave: #8c7a70; /* texto suave */
+  --color-fraco: #a89489; /* texto fraco / rótulo */
+  --color-apagado: #bcaa9e; /* ícone/traço inativo */
 
-  --color-verdinho: #2f9e6b;
-  --color-verdinho-claro: #e6f5ee;
-  --color-vermelhinho: #d15a52;
-  --color-vermelhinho-claro: #fbeceb;
-  --color-amarelinho: #dc9631;
-  --color-amarelinho-claro: #fdf2e0;
-  --color-azulzinho: #4a7fd4;
-  --color-azulzinho-claro: #eaf1fc;
+  /* Acento e categorias. */
+  --color-rosa: #f2a69b; /* acento primário */
+  --color-rosinha: #fbe3de; /* superfície do mascote */
+  --color-rosinha-forte: #f2a69b; /* mantido: o + e a aba ativa */
+  --color-link: #c2705f; /* link / ação em texto */
+  --color-verdinho: #17915c;
+  --color-verdinho-claro: #ddf0e5;
+  --color-vermelhinho: #d9452f;
+  --color-vermelhinho-claro: #fdeceb;
+  --color-amarelinho: #b98b2a;
+  --color-amarelinho-claro: #fdefd6;
+  --color-azulzinho: #2f5aa8;
+  --color-azulzinho-claro: #e4edfd;
   --color-roxinho: #7b62c9;
-  --color-roxinho-claro: #f0ecfb;
+  --color-roxinho-claro: #ede7f5;
 
-  /* O rosa do porquinho — a pele e a bochecha dele, tiradas do próprio SVG. */
-  --color-rosinha: #fbd5cd;
-  --color-rosinha-forte: #f3b9ae;
+  /* Verde e amarelo alternativos do acento (anéis de meta). */
+  --color-verdinho-suave: #8fbf9f;
+  --color-amarelinho-suave: #e8c46a;
+  --color-azulzinho-suave: #a9b7e8;
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), var(--font-body), ui-sans-serif, sans-serif;
+  --font-mono: ui-monospace, Menlo, monospace;
 }
 
 html,
 body {
   background: var(--color-creme);
   color: var(--color-tinta);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Títulos, valores e rótulos de navegação usam a fonte de exibição. */
+h1, h2, h3, .fonte-display {
+  font-family: var(--font-display), var(--font-body), sans-serif;
 }
 
 /* Números de dinheiro alinhados em coluna */
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Esconder valores (o olho no cabeçalho).
+ *
+ * Todo número de dinheiro no app usa a classe .tabular, então dá para escondê-los
+ * de uma vez borrando essa classe quando o olho está fechado. Fica ilegível mas
+ * o layout não pula — e some junto ao passar o dedo, sem tela nova.
+ */
+.valores-ocultos .tabular {
+  filter: blur(8px);
+  user-select: none;
+  pointer-events: none;
 }
 
 /*
@@ -81,6 +111,63 @@ body {
     transform: translateY(-7px);
   }
 }
+
+/* -------------------------------------------------------------------
+   Animações do redesign. O mascote respira e flutua; nas telas de festa
+   ele pula e solta confete. Tudo em transform/opacity, e tudo desligado
+   para quem pede menos movimento (ver o bloco de prefers-reduced-motion).
+   ------------------------------------------------------------------- */
+@keyframes breathe {
+  0%, 100% { transform: scale(1) rotate(0); }
+  50% { transform: scale(1.05) rotate(-1.6deg); }
+}
+@keyframes bob {
+  0%, 100% { transform: translateY(0) rotate(-2.5deg); }
+  50% { transform: translateY(-8px) rotate(2.5deg); }
+}
+@keyframes squash {
+  0% { transform: scale(1, 1) translateY(0); }
+  16% { transform: scale(1.18, 0.82) translateY(3px); }
+  44% { transform: scale(0.9, 1.14) translateY(-24px) rotate(-6deg); }
+  70% { transform: scale(1.1, 0.92) translateY(0) rotate(3deg); }
+  100% { transform: scale(1, 1) translateY(0); }
+}
+@keyframes pigPop {
+  0% { transform: scale(0.35) translateY(24px); opacity: 0; }
+  62% { transform: scale(1.13) translateY(0); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes ringOut {
+  0% { transform: scale(0.6); opacity: 0.55; }
+  100% { transform: scale(2.1); opacity: 0; }
+}
+@keyframes coinFloat {
+  0%, 100% { transform: translateY(0) rotate(-8deg); }
+  50% { transform: translateY(-14px) rotate(10deg); }
+}
+@keyframes cresceBarra {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+@keyframes caret {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+@keyframes confetti {
+  0% { transform: translateY(-10px) rotate(0); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translateY(340px) rotate(560deg); opacity: 0; }
+}
+@keyframes checkPop {
+  0% { transform: scale(0.2); opacity: 0; }
+  60% { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.respira { animation: breathe 3.8s ease-in-out infinite; }
+.flutua-bob { animation: bob 3s ease-in-out infinite; }
+.pig-pop { animation: pigPop 0.75s cubic-bezier(0.2, 1.2, 0.3, 1) both; }
+.caret { animation: caret 1.1s steps(1) infinite; }
 
 /* -------------------------------------------------------------------
    As janelas do app: o menu (folha, de baixo) e o anotar (janela, no meio).
@@ -323,6 +410,10 @@ dialog.janela[open]::backdrop {
 @media (prefers-reduced-motion: reduce) {
   .surge,
   .pulinho,
+  .respira,
+  .flutua-bob,
+  .pig-pop,
+  .caret,
   .cai,
   .cutuca,
   .balancinho,

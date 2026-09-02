@@ -47,11 +47,11 @@ export function Sino({ ultimoAviso }: { ultimoAviso: string | null }) {
     <Link
       href="/avisos"
       aria-label={temNovidade ? "Avisos, tem novidade" : "Avisos"}
-      className="relative -mr-2 flex h-10 w-10 items-center justify-center rounded-full text-tinta transition hover:bg-areia"
+      className="relative flex h-[38px] w-[38px] items-center justify-center rounded-[14px] bg-white text-tinta shadow-[0_1px_2px_rgba(46,33,28,0.08)] transition active:scale-95"
     >
       <svg
-        width="22"
-        height="22"
+        width="20"
+        height="20"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -67,7 +67,7 @@ export function Sino({ ultimoAviso }: { ultimoAviso: string | null }) {
       {temNovidade ? (
         <span
           aria-hidden
-          className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-creme bg-vermelhinho"
+          className="absolute right-2 top-2 h-2 w-2 rounded-full bg-vermelhinho ring-[2.5px] ring-white"
         />
       ) : null}
     </Link>
