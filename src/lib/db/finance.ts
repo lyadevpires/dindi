@@ -155,8 +155,20 @@ export async function editTransaction(ctx: Ctx, input: EditTransactionInput) {
   // Se mudou a conta ou a data, a fatura do cartão pode ter mudado.
   const finalAccountId = (patch.account_id as string) ?? existing.account_id;
   const finalDate = (patch.date as string) ?? existing.date;
+  const finalType = (patch.type as TxType) ?? existing.type;
   const accounts = await allAccounts(ctx);
   const finalAccount = accounts.find((a) => a.id === finalAccountId)!;
+
+  // O mesmo freio do addTransaction, que aqui faltava: entrada não vive em
+  // cartão. Sem isto, editar um lançamento conseguia empurrar um salário para
+  // dentro de um cartão — e aí o dinheiro sumia da conta e ainda inchava a
+  // fatura. Se foi estorno, o certo é editar ou apagar a despesa original.
+  if (finalAccount.type === "credit_card" && finalType === "income") {
+    throw new DindiError(
+      "Não dá para deixar uma entrada num cartão de crédito. Se foi estorno, edite ou apague a despesa."
+    );
+  }
+
   patch.invoice_month =
     finalAccount.type === "credit_card"
       ? invoiceMonthFor(finalDate, finalAccount.closing_day!)
@@ -324,12 +336,20 @@ export async function getBalance(ctx: Ctx, accountQuery?: string) {
       const open = mine.filter(
         (t) => !paidKeys.has(`${acc.id}|${t.invoice_month}`)
       );
-      const owed = round2(open.reduce((s, t) => s + num(t.amount), 0));
+      // Despesa soma na fatura; entrada (um estorno mal lançado, por exemplo)
+      // abate. Antes somávamos tudo às cegas, então uma entrada de R$ 12 mil
+      // parada num cartão era contada como R$ 12 mil de dívida — o oposto do
+      // que ela é. Nunca deixamos uma entrada inflar o que se deve.
+      const liquido = open.reduce(
+        (s, t) => s + (t.type === "income" ? -num(t.amount) : num(t.amount)),
+        0
+      );
+      const owed = round2(Math.max(liquido, 0));
       return {
         account: acc.name,
         type: acc.type,
-        // saldo negativo = o quanto você deve nesse cartão
-        balance: round2(-owed),
+        // saldo negativo = o quanto você deve; positivo = crédito a seu favor
+        balance: round2(-liquido),
         open_invoice_debt: owed,
       };
     }
@@ -804,13 +824,22 @@ async function ensureInvoice(
 
   const { data: txs, error: tErr } = await ctx.db
     .from("transactions")
-    .select("amount")
+    .select("amount, type")
     .eq("household_id", ctx.householdId)
     .eq("account_id", card.id)
     .eq("invoice_month", referenceMonth);
   if (tErr) throw new DindiError(tErr.message);
 
-  const total = round2((txs ?? []).reduce((s, t) => s + num(t.amount), 0));
+  // Despesa soma; entrada abate. Nunca deixamos uma entrada inflar a fatura.
+  const total = round2(
+    Math.max(
+      (txs ?? []).reduce(
+        (s, t) => s + (t.type === "income" ? -num(t.amount) : num(t.amount)),
+        0
+      ),
+      0
+    )
+  );
 
   const { data: existing } = await ctx.db
     .from("invoices")

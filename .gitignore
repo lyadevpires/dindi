@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Handoff de design (referência, fora da árvore de código)
+design_handoff_dindi_redesign/

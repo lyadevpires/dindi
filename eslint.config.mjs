@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Protótipo do redesign (Claude Design): referência, não código do app.
+    "design_handoff_dindi_redesign/**",
   ]),
 ]);
 
