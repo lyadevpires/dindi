@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { ActionForm, Field } from "@/components/auth-form";
 import { Dindi, Logo } from "@/components/dindi";
+import { AceitarConvite } from "@/components/aceitar-convite";
 import { createHousehold, joinHousehold } from "@/app/auth/actions";
 import { getSession, getUser } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -49,29 +50,62 @@ export default async function ComecarPage(props: PageProps<"/comecar">) {
   // Chegou por convite: o convite é a tela inteira.
   // ---------------------------------------------------------------
   if (convite) {
+    // Já tem um dindi? Descobrimos se ele é dividido (outro fluxo) e se tem
+    // coisas dentro (aí a pessoa escolhe levar ou zerar).
+    let dividido = false;
+    let temDados = false;
+    if (session) {
+      const [membros, tx, contas, metas] = await Promise.all([
+        supabase
+          .from("household_members")
+          .select("user_id", { count: "exact", head: true })
+          .eq("household_id", session.householdId),
+        supabase
+          .from("transactions")
+          .select("id", { count: "exact", head: true })
+          .eq("household_id", session.householdId),
+        supabase
+          .from("accounts")
+          .select("id", { count: "exact", head: true })
+          .eq("household_id", session.householdId),
+        supabase
+          .from("goals")
+          .select("id", { count: "exact", head: true })
+          .eq("household_id", session.householdId),
+      ]);
+      dividido = (membros.count ?? 0) > 1;
+      temDados = (tx.count ?? 0) > 0 || (contas.count ?? 0) > 0 || (metas.count ?? 0) > 0;
+    }
+
     return (
       <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-5 py-16">
         <div className="mb-8 text-center">
-          <Dindi size={72} humor="feliz" acena className="mx-auto" />
-          <h1 className="mt-4 text-2xl font-bold tracking-tight">Você foi convidada</h1>
+          <Dindi size={72} humor={dividido ? "atento" : "feliz"} acena className="mx-auto" />
+          <h1 className="mt-4 text-2xl font-bold tracking-tight">
+            {dividido ? "Opa, um segundo" : "Você foi convidada"}
+          </h1>
           <p className="mt-2 text-sm text-suave">
-            Alguém te chamou pra cuidar do dinheiro junto. Diz como você quer ser
-            chamada e pronto.
+            {dividido
+              ? "Você já divide um dindi com outra pessoa. Entrar num novo a partir daí a gente ainda vai desenhar com calma."
+              : "Alguém te chamou pra cuidar do dinheiro junto. Diz como você quer ser chamada e pronto."}
           </p>
         </div>
 
-        <div className="rounded-2xl border border-borda bg-white p-6">
-          <ActionForm action={joinHousehold} submitLabel="Entrar no dindi" hidden={{ next }}>
-            <Field
-              label="Como você quer ser chamada?"
-              name="display_name"
-              placeholder="Ex: Vanessa"
-              defaultValue={nomeDoGoogle}
-              hint="É esse nome que o Claude usa pra saber quem gastou o quê."
+        {dividido ? (
+          <div className="rounded-2xl border border-borda bg-white p-6 text-center text-sm text-suave">
+            Me chama que a gente resolve isso juntos — sem mexer no dindi que você já
+            divide.
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-borda bg-white p-6">
+            <AceitarConvite
+              next={next}
+              codigo={convite}
+              nomeSugerido={nomeDoGoogle}
+              temDados={temDados}
             />
-            <input type="hidden" name="code" value={convite} />
-          </ActionForm>
-        </div>
+          </div>
+        )}
 
         <p className="mt-5 text-center text-sm text-suave">
           Esse convite não é seu? Fale com quem te mandou.

@@ -98,10 +98,84 @@ begin
   return code;
 end $$;
 
+-- Move tudo de um dindi para outro: contas, categorias, lançamentos, faturas,
+-- recorrências, orçamentos e metas. Usado quando alguém aceita um convite e
+-- escolhe "levar minhas coisas".
+--
+-- As categorias são mescladas por nome (a tabela tem unique(household_id,name),
+-- e dois dindis novos nascem com as mesmas categorias-semente): se o destino já
+-- tem uma categoria com aquele nome, os lançamentos são reapontados para ela e
+-- a de origem é descartada. O resto muda de household_id direto.
+create or replace function public.migrar_dindi(de uuid, para uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c    record;
+  alvo uuid;
+begin
+  -- Categorias: mesclar por nome, reapontando quem as usa.
+  for c in select id, name from categories where household_id = de loop
+    select id into alvo
+      from categories where household_id = para and name = c.name limit 1;
+
+    if alvo is not null then
+      update transactions           set category_id = alvo where category_id = c.id;
+      update credit_card_purchases  set category_id = alvo where category_id = c.id;
+      update recurring_rules        set category_id = alvo where category_id = c.id;
+      update budgets                set category_id = alvo where category_id = c.id;
+      delete from categories where id = c.id;
+    else
+      update categories set household_id = para where id = c.id;
+    end if;
+  end loop;
+
+  -- Contas e o que pende delas (mantêm o mesmo id, então nada quebra).
+  update accounts              set household_id = para where household_id = de;
+  update credit_card_purchases set household_id = para where household_id = de;
+  update recurring_rules       set household_id = para where household_id = de;
+  update invoices              set household_id = para where household_id = de;
+  update transactions          set household_id = para where household_id = de;
+
+  -- Reserva de emergência é única por dindi (não-arquivada). Se o destino já
+  -- tem a dele, a que vem vira sonho para não bater na trava.
+  update goals set kind = 'sonho'
+    where household_id = de and kind = 'emergencia' and archived = false
+      and exists (
+        select 1 from goals
+         where household_id = para and kind = 'emergencia' and archived = false
+      );
+  update goals              set household_id = para where household_id = de;
+  update goal_contributions set household_id = para where household_id = de;
+
+  -- Orçamentos: um limite por categoria e mês. Se o destino já tem um para a
+  -- mesma categoria e mês, o dele manda e o que vinha é descartado.
+  delete from budgets b
+    where b.household_id = de
+      and exists (
+        select 1 from budgets t
+         where t.household_id = para
+           and t.category_id = b.category_id
+           and t.reference_month = b.reference_month
+      );
+  update budgets set household_id = para where household_id = de;
+end $$;
+
 -- Entra numa casa usando o código de convite.
+--
+-- p_mode diz o que fazer com o dindi antigo de quem aceita:
+--   'fresh'   — começa zerado; o dindi antigo (dela e só dela) é descartado.
+--   'migrate' — leva as coisas do dindi antigo para o novo, e depois o antigo
+--               é descartado.
+-- Vale só para quem está sozinha no dindi antigo. Dindi dividido com outras
+-- pessoas é outro caso (levaria dados dos outros junto) — barrado com um aviso
+-- que o app reconhece.
 create or replace function public.accept_invite(
   p_code         text,
-  p_display_name text
+  p_display_name text,
+  p_mode         text default 'fresh'
 )
 returns uuid
 language plpgsql
@@ -113,6 +187,7 @@ declare
   uid          uuid := auth.uid();
   minhas_casas int;
   casa_atual   uuid;
+  membros_ali  int;
 begin
   if uid is null then raise exception 'não autenticado'; end if;
 
@@ -121,31 +196,30 @@ begin
 
   if inv.id is null then raise exception 'convite inválido ou expirado'; end if;
 
-  -- Já faz parte de alguma casa?
-  --
-  -- Quem clicou num convite, caiu no login e perdeu o código no caminho
-  -- acabava criando um dindi vazio por engano — e depois não conseguia mais
-  -- aceitar o convite, porque "já fazia parte de uma casa". Então: se a única
-  -- casa da pessoa é um vazio que só ela habita (nada lançado, nenhuma conta,
-  -- nenhuma meta), a gente descarta esse vazio e deixa ela entrar. O cascade
-  -- do banco limpa as categorias-semente junto. Qualquer outra situação —
-  -- casa com dados, ou dividida com mais alguém — continua barrada.
   select count(*) into minhas_casas from household_members where user_id = uid;
 
   if minhas_casas > 0 then
     select household_id into casa_atual
       from household_members where user_id = uid limit 1;
 
-    if minhas_casas = 1
-       and (select count(*) from household_members where household_id = casa_atual) = 1
-       and not exists (select 1 from transactions where household_id = casa_atual)
-       and not exists (select 1 from accounts     where household_id = casa_atual)
-       and not exists (select 1 from goals        where household_id = casa_atual)
-    then
-      delete from households where id = casa_atual;
-    else
-      raise exception 'você já faz parte de uma casa';
+    if casa_atual = inv.household_id then
+      raise exception 'você já está nesse dindi';
     end if;
+
+    select count(*) into membros_ali
+      from household_members where household_id = casa_atual;
+
+    -- Dividido com mais alguém: fluxo à parte, ainda não tratado. Barra sem
+    -- destruir nada. O app reconhece esta marca e explica.
+    if minhas_casas > 1 or membros_ali > 1 then
+      raise exception 'dindi-dividido';
+    end if;
+
+    -- Sozinha no dindi antigo: leva as coisas se pediu, e descarta o antigo.
+    if p_mode = 'migrate' then
+      perform migrar_dindi(casa_atual, inv.household_id);
+    end if;
+    delete from households where id = casa_atual;  -- cascade limpa o resto
   end if;
 
   insert into household_members (household_id, user_id, display_name, role)

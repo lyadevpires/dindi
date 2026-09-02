@@ -3,6 +3,7 @@ import { Card, Empty, Pill, SectionTitle } from "@/components/ui";
 import { ConviteBotao } from "@/components/convite";
 import { ApagarConta } from "@/components/apagar";
 import { ApagarMinhaConta } from "@/components/apagar-conta";
+import { AtualizarBanco } from "@/components/atualizar-banco";
 import { ActionForm, Field } from "@/components/auth-form";
 import { Avisos } from "@/components/avisos";
 import { updatePassword } from "@/app/auth/actions";
@@ -267,6 +268,21 @@ export default async function Ajustes() {
           <ApagarMinhaConta sozinha={membros.length === 1} />
         </Card>
       </section>
+
+      {/* ---------------- Manutenção (só quem criou o dindi) ---------------- */}
+      {session.role === "owner" ? (
+        <section className="mt-10 border-t border-borda pt-8">
+          <SectionTitle>Manutenção</SectionTitle>
+          <Card>
+            <p className="justo mb-4 text-sm leading-relaxed text-suave">
+              Depois de uma novidade que mexe na estrutura do dindi, clique aqui uma
+              vez para o banco se atualizar. Se estiver tudo em dia, não faz nada de
+              mal apertar.
+            </p>
+            <AtualizarBanco />
+          </Card>
+        </section>
+      ) : null}
     </>
   );
 }

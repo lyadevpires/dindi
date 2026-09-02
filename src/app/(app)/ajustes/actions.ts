@@ -152,3 +152,28 @@ export async function desligarAvisos(endpoint: string): Promise<void> {
 
   revalidatePath("/ajustes");
 }
+
+/**
+ * Aplica as atualizações do banco de dados — a versão com botão do que a rota
+ * `/api/setup` faz com o CRON_SECRET.
+ *
+ * Existe porque quem cuida do dindi não tem a chave de produção à mão, e toda
+ * mudança de estrutura (uma coluna nova, uma função nova) precisa ser aplicada
+ * no banco depois que o código sobe. Fica só para o dono, e roda apenas o SQL
+ * versionado no repositório — nunca SQL de fora. Repetir é seguro.
+ */
+export async function atualizarBanco(_prev: ActionState): Promise<ActionState> {
+  const session = await requireSession();
+  if (session.role !== "owner") {
+    return { error: "Só quem criou o dindi pode atualizar o banco." };
+  }
+
+  const { aplicarMigracoes } = await import("@/lib/db/migrar");
+  const resultado = await aplicarMigracoes();
+
+  if (!resultado.ok) {
+    return { error: `Parou em ${resultado.parou_em ?? "?"}: ${resultado.error}` };
+  }
+
+  return { ok: `Banco atualizado. ${resultado.aplicados.length} arquivos aplicados.` };
+}

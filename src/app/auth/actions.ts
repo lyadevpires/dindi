@@ -117,6 +117,9 @@ export async function joinHousehold(
   const code = String(formData.get("code") ?? "").trim();
   const displayName = String(formData.get("display_name") ?? "").trim();
   const next = safeNext(formData.get("next"));
+  // "migrate" leva as coisas do dindi antigo; qualquer outra coisa é começar
+  // zerado. O padrão é zerado — só leva quem escolheu levar.
+  const mode = formData.get("mode") === "migrate" ? "migrate" : "fresh";
 
   if (!code) return { error: "Cole o código do convite." };
   if (!displayName) return { error: "Diga como você quer ser chamado." };
@@ -125,9 +128,20 @@ export async function joinHousehold(
   const { error } = await supabase.rpc("accept_invite", {
     p_code: code,
     p_display_name: displayName,
+    p_mode: mode,
   });
 
-  if (error) return { error: error.message };
+  if (error) {
+    // Marca vinda do banco quando a pessoa divide o dindi antigo com mais
+    // gente: caso à parte, ainda não tratado. Explica em vez de despejar o erro.
+    if (error.message.includes("dindi-dividido")) {
+      return {
+        error:
+          "Você já divide um dindi com outra pessoa. Entrar num novo a partir daí é um passo que a gente ainda vai desenhar com calma — me chama que resolvemos juntos.",
+      };
+    }
+    return { error: error.message };
+  }
 
   revalidatePath("/", "layout");
   // Quem entra por convite também precisa do app no celular e do Claude.
