@@ -109,8 +109,10 @@ security definer
 set search_path = public
 as $$
 declare
-  inv  household_invites%rowtype;
-  uid  uuid := auth.uid();
+  inv          household_invites%rowtype;
+  uid          uuid := auth.uid();
+  minhas_casas int;
+  casa_atual   uuid;
 begin
   if uid is null then raise exception 'não autenticado'; end if;
 
@@ -119,8 +121,31 @@ begin
 
   if inv.id is null then raise exception 'convite inválido ou expirado'; end if;
 
-  if exists (select 1 from household_members where user_id = uid) then
-    raise exception 'você já faz parte de uma casa';
+  -- Já faz parte de alguma casa?
+  --
+  -- Quem clicou num convite, caiu no login e perdeu o código no caminho
+  -- acabava criando um dindi vazio por engano — e depois não conseguia mais
+  -- aceitar o convite, porque "já fazia parte de uma casa". Então: se a única
+  -- casa da pessoa é um vazio que só ela habita (nada lançado, nenhuma conta,
+  -- nenhuma meta), a gente descarta esse vazio e deixa ela entrar. O cascade
+  -- do banco limpa as categorias-semente junto. Qualquer outra situação —
+  -- casa com dados, ou dividida com mais alguém — continua barrada.
+  select count(*) into minhas_casas from household_members where user_id = uid;
+
+  if minhas_casas > 0 then
+    select household_id into casa_atual
+      from household_members where user_id = uid limit 1;
+
+    if minhas_casas = 1
+       and (select count(*) from household_members where household_id = casa_atual) = 1
+       and not exists (select 1 from transactions where household_id = casa_atual)
+       and not exists (select 1 from accounts     where household_id = casa_atual)
+       and not exists (select 1 from goals        where household_id = casa_atual)
+    then
+      delete from households where id = casa_atual;
+    else
+      raise exception 'você já faz parte de uma casa';
+    end if;
   end if;
 
   insert into household_members (household_id, user_id, display_name, role)
