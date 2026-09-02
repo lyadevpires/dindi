@@ -106,15 +106,18 @@ end $$;
 -- e dois dindis novos nascem com as mesmas categorias-semente): se o destino já
 -- tem uma categoria com aquele nome, os lançamentos são reapontados para ela e
 -- a de origem é descartada. O resto muda de household_id direto.
-create or replace function public.migrar_dindi(de uuid, para uuid)
+drop function if exists public.migrar_dindi(uuid, uuid);
+create or replace function public.migrar_dindi(de uuid, para uuid, p_nome text)
 returns void
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  c    record;
-  alvo uuid;
+  c        record;
+  a        record;
+  alvo     uuid;
+  primeiro text := coalesce(nullif(split_part(trim(p_nome), ' ', 1), ''), 'Migrado');
 begin
   -- Categorias: mesclar por nome, reapontando quem as usa.
   for c in select id, name from categories where household_id = de loop
@@ -129,6 +132,17 @@ begin
       delete from categories where id = c.id;
     else
       update categories set household_id = para where id = c.id;
+    end if;
+  end loop;
+
+  -- Contas e cartões: diferente das categorias, não se mesclam — a "Nubank"
+  -- dela pode ser outra conta que não a "Nubank" dele. Mas duas com o mesmo
+  -- nome confundem, então a que vem ganha o primeiro nome da pessoa na frente
+  -- ("Nubank" → "Lyandra Nubank"). O id não muda, então nada que aponta para
+  -- ela quebra.
+  for a in select id, name from accounts where household_id = de loop
+    if exists (select 1 from accounts where household_id = para and name = a.name) then
+      update accounts set name = left(primeiro || ' ' || a.name, 60) where id = a.id;
     end if;
   end loop;
 
@@ -217,7 +231,7 @@ begin
 
     -- Sozinha no dindi antigo: leva as coisas se pediu, e descarta o antigo.
     if p_mode = 'migrate' then
-      perform migrar_dindi(casa_atual, inv.household_id);
+      perform migrar_dindi(casa_atual, inv.household_id, p_display_name);
     end if;
     delete from households where id = casa_atual;  -- cascade limpa o resto
   end if;
