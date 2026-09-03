@@ -1,7 +1,6 @@
 import { Shell } from "@/components/shell";
 import { BotaoLancar } from "@/components/lancar";
 import { AvisoConectar } from "@/components/aviso-conectar";
-import { signOut } from "@/app/auth/actions";
 import { pageCtx } from "@/lib/ctx";
 import { claudeConectado } from "@/lib/auth";
 import { listAccounts, listCategories } from "@/lib/db/finance";
@@ -45,16 +44,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           categorias={categorias}
           hoje={today()}
         />
-      }
-      sair={
-        <form action={signOut}>
-          <button
-            type="submit"
-            className="rounded-xl px-4 py-2.5 text-sm text-vermelhinho transition hover:bg-vermelhinho-claro"
-          >
-            Sair da conta
-          </button>
-        </form>
       }
     >
       {children}

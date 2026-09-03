@@ -65,6 +65,15 @@ export function addDays(iso: string, n: number): string {
   return toISO(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate());
 }
 
+/** Quantos dias inteiros desde uma data (aceita timestamp; ignora a hora). */
+export function diasDesde(iso: string): number {
+  const inicio = parseISO(iso.slice(0, 10));
+  const hoje = parseISO(today());
+  const a = Date.UTC(inicio.y, inicio.m - 1, inicio.d);
+  const b = Date.UTC(hoje.y, hoje.m - 1, hoje.d);
+  return Math.max(0, Math.round((b - a) / 86_400_000));
+}
+
 /** Quantos meses entre dois meses de referência. */
 export function monthsBetween(fromISO: string, toISOStr: string): number {
   const a = parseISO(fromISO);

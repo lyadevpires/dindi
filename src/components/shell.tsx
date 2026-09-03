@@ -68,13 +68,11 @@ function alternarEsconder() {
 }
 
 export function Shell({
-  sair,
   aviso,
   lancar,
   ultimoAviso,
   children,
 }: {
-  sair: React.ReactNode;
   aviso?: React.ReactNode;
   lancar: React.ReactNode;
   ultimoAviso: string | null;
@@ -125,7 +123,7 @@ export function Shell({
         {children}
       </main>
 
-      <Barra lancar={lancar} sair={sair} />
+      <Barra lancar={lancar} />
     </div>
   );
 }
