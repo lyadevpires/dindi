@@ -1890,3 +1890,112 @@ export async function createHouseholdInvite(ctx: Ctx, input: { email?: string } 
     vale_ate: data.expires_at,
   };
 }
+
+/**
+ * Juntar duas contas que sempre foram a mesma.
+ *
+ * Acontece o tempo todo no Brasil: o banco é conta E cartão, e ele entra no
+ * dindi duas vezes — "Nubank PJ" (o cartão) e "Nubank PJ Conta" (o saldo).
+ * Aí o dinheiro fica partido em dois lugares e nenhum dos dois conta a
+ * verdade. Juntar não é apagar: tudo que estava na origem (lançamentos,
+ * contas que repetem, parcelamentos, faturas, saldo inicial) passa para o
+ * destino, e só então a origem some.
+ *
+ * O destino fica sabendo fazer as duas coisas se qualquer uma das duas sabia,
+ * e guarda os dias de fatura de quem os tinha.
+ */
+export async function mergeAccounts(ctx: Ctx, input: { from: string; into: string }) {
+  const origem = (await resolveAccount(ctx, input.from, { required: true, arquivadas: true }))!;
+  const alvo = (await resolveAccount(ctx, input.into, { required: true, arquivadas: true }))!;
+
+  if (origem.id === alvo.id) {
+    throw new DindiError(`"${origem.name}" e "${alvo.name}" são a mesma conta — não há o que juntar.`);
+  }
+
+  // Faturas primeiro: existe uma por conta e mês, então duas do mesmo mês não
+  // podem virar uma só. Fatura é um retrato que o dindi refaz a partir dos
+  // lançamentos — mas uma fatura PAGA guarda algo que não dá para refazer
+  // (que ela foi paga, e de onde saiu o dinheiro). Por isso, quando as duas
+  // batem no mesmo mês, quem estiver paga ganha.
+  const faturasDe = async (accountId: string) => {
+    const { data, error } = await ctx.db
+      .from("invoices")
+      .select("id, reference_month, status")
+      .eq("household_id", ctx.householdId)
+      .eq("account_id", accountId);
+    if (error) throw new DindiError(error.message);
+    return data ?? [];
+  };
+
+  const [daOrigem, doAlvo] = await Promise.all([faturasDe(origem.id), faturasDe(alvo.id)]);
+  const descartar: string[] = [];
+  for (const f of daOrigem) {
+    const igual = doAlvo.find((a) => a.reference_month === f.reference_month);
+    if (!igual) continue;
+    descartar.push(f.status === "paid" && igual.status !== "paid" ? igual.id : f.id);
+  }
+  if (descartar.length) {
+    const { error } = await ctx.db
+      .from("invoices")
+      .delete()
+      .eq("household_id", ctx.householdId)
+      .in("id", descartar);
+    if (error) throw new DindiError(error.message);
+  }
+
+  // O que aponta para a origem passa a apontar para o destino.
+  const mudarDono = async (tabela: string, campo: string) => {
+    const { data, error } = await ctx.db
+      .from(tabela)
+      .update({ [campo]: alvo.id })
+      .eq("household_id", ctx.householdId)
+      .eq(campo, origem.id)
+      .select("id");
+    if (error) throw new DindiError(error.message);
+    return data?.length ?? 0;
+  };
+
+  const lancamentos = await mudarDono("transactions", "account_id");
+  const fixas = await mudarDono("recurring_rules", "account_id");
+  const compras = await mudarDono("credit_card_purchases", "account_id");
+  const faturas = await mudarDono("invoices", "account_id");
+  // Fatura paga com dinheiro da origem continua tendo saído de algum lugar.
+  await mudarDono("invoices", "paid_from_account_id");
+
+  const { error: upErr } = await ctx.db
+    .from("accounts")
+    .update({
+      tem_debito: alvo.tem_debito || origem.tem_debito,
+      tem_credito: alvo.tem_credito || origem.tem_credito,
+      closing_day: alvo.closing_day ?? origem.closing_day,
+      due_day: alvo.due_day ?? origem.due_day,
+      opening_balance: round2(num(alvo.opening_balance) + num(origem.opening_balance)),
+      owner_user_id: alvo.owner_user_id ?? origem.owner_user_id,
+      archived: false,
+    })
+    .eq("id", alvo.id)
+    .eq("household_id", ctx.householdId);
+  if (upErr) throw new DindiError(upErr.message);
+
+  const { error: delErr } = await ctx.db
+    .from("accounts")
+    .delete()
+    .eq("id", origem.id)
+    .eq("household_id", ctx.householdId);
+  if (delErr) throw new DindiError(delErr.message);
+
+  return {
+    juntou: origem.name,
+    dentro_de: alvo.name,
+    mudaram_de_lugar: {
+      lançamentos: lancamentos,
+      contas_que_repetem: fixas,
+      parcelamentos: compras,
+      faturas,
+    },
+    agora_faz: [
+      alvo.tem_debito || origem.tem_debito ? "débito" : null,
+      alvo.tem_credito || origem.tem_credito ? "crédito" : null,
+    ].filter(Boolean),
+  };
+}

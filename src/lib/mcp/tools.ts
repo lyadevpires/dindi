@@ -413,6 +413,20 @@ export function registerDindiTools(server: McpServer, ctx: Ctx) {
   );
 
   server.registerTool(
+    "merge_accounts",
+    {
+      title: "Juntar duas contas que são a mesma",
+      description:
+        "Junta duas contas que na vida real sempre foram uma só — o caso clássico é o banco que entrou duas vezes, uma como conta e outra como cartão ('Nubank PJ' e 'Nubank PJ Conta'). Tudo que estava na primeira (lançamentos, contas que repetem, parcelamentos, faturas e o saldo inicial) passa para a segunda, e só então a primeira some. A que fica passa a fazer as duas coisas, débito e crédito, e guarda os dias de fatura. Use SÓ quando forem mesmo a mesma conta, e CONFIRME antes: não tem desfazer.",
+      inputSchema: z.object({
+        from: z.string().describe("A conta que vai sumir. Ex: 'Nubank PJ Conta'."),
+        into: z.string().describe("A conta que fica, e que recebe tudo. Ex: 'Nubank PJ'."),
+      }),
+    },
+    safe((args) => fin.mergeAccounts(ctx, args))
+  );
+
+  server.registerTool(
     "archive_category",
     {
       title: "Esconder categoria",
@@ -858,7 +872,9 @@ Como se comportar:
      → delete_credit_card_purchase, que some com as N parcelas de uma vez;
    - a meta foi conquistada ou abandonada → edit_goal com archived=true
      (se foi conquistada, comemore antes);
-   - a conta não é mais usada, ou entrou duplicada → archive_account.
+   - o mesmo banco entrou duas vezes, uma como conta e outra como cartão
+     → merge_accounts, que junta as duas sem perder lançamento;
+   - a conta não é mais usada → archive_account.
      Arquivar esconde e guarda o passado; apagar só funciona se ela estiver
      vazia, e é isso que impede o extrato de mentir sobre meses que já
      passaram. Para categoria é igual: archive_category.
