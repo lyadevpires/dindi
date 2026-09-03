@@ -50,6 +50,7 @@ export async function lancar(_prev: ActionState, formData: FormData): Promise<Ac
 
   try {
     const { ctx } = await pageCtx();
+    const viaBruto = formData.get("via");
     const t = await addTransaction(ctx, {
       amount: valor,
       // Sem detalhe, o nome da categoria já diz o suficiente no extrato.
@@ -58,6 +59,8 @@ export async function lancar(_prev: ActionState, formData: FormData): Promise<Ac
       date: String(formData.get("data") ?? "") || undefined,
       category: nome,
       account: String(formData.get("conta") ?? "") || undefined,
+      // Só importa numa conta que é débito e crédito.
+      via: viaBruto === "credito" ? "credito" : viaBruto === "debito" ? "debito" : undefined,
     });
 
     revalidatePath("/", "layout");

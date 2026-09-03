@@ -12,7 +12,14 @@ export type CategoriaOpcao = {
   kind: "expense" | "income" | "both";
   grupo: string;
 };
-export type ContaOpcao = { id: string; name: string; type: string; archived: boolean };
+export type ContaOpcao = {
+  id: string;
+  name: string;
+  type: string;
+  tem_debito: boolean;
+  tem_credito: boolean;
+  archived: boolean;
+};
 
 /**
  * O atalho de registrar sem conversar.
@@ -55,9 +62,8 @@ export function BotaoLancar({
           // Clicou no escuro em volta, e não no cartão: fecha.
           if (e.target === dialogo.current) dialogo.current?.close();
         }}
-        // O `m-auto` é o que centraliza: o reset do Tailwind zera a margem que
-        // o navegador dá de graça para o <dialog>.
-        className="janela m-auto w-[calc(100vw-2rem)] max-w-sm rounded-2xl border border-borda bg-white p-0 text-tinta"
+        // Folha que sobe de baixo: cara de aplicativo, na altura do polegar.
+        className="folha m-0 mt-auto w-full max-w-none rounded-t-[32px] bg-creme p-0 text-tinta sm:mx-auto sm:max-w-md"
       >
         {/*
           Sem nenhuma conta não existe onde lançar. Em vez de esconder o botão
@@ -83,9 +89,14 @@ function PrimeiraConta({ fechar }: { fechar: () => void }) {
   const [estado, acao] = useActionState<ActionState, FormData>(criarPrimeiraConta, null);
 
   return (
-    <form action={acao} className="space-y-4 p-5">
+    <form
+      action={acao}
+      className="space-y-4 px-5 pt-3"
+      style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
+    >
+      <span aria-hidden className="mx-auto block h-1 w-10 rounded-full bg-[#E2D4C2]" />
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold tracking-tight">Onde fica seu dinheiro?</h2>
+        <h2 className="fonte-display text-lg font-bold tracking-tight">Onde fica seu dinheiro?</h2>
         <button
           type="button"
           onClick={fechar}
@@ -150,7 +161,14 @@ function Formulario({
   const [entrada, setEntrada] = useState(false);
   const [repete, setRepete] = useState(false);
   const [parcelado, setParcelado] = useState(false);
+  const [conta, setConta] = useState(contas[0]?.name ?? "");
+  const [via, setVia] = useState<"debito" | "credito">("debito");
   const form = useRef<HTMLFormElement>(null);
+
+  // Conta que é débito E crédito (tipo Nubank PJ): num gasto, a pessoa escolhe
+  // se foi no crédito (vai pra fatura) ou no débito (sai do saldo).
+  const contaObj = contas.find((c) => c.name === conta);
+  const hibrida = Boolean(contaObj?.tem_debito && contaObj?.tem_credito);
 
   // Depois de anotar, limpa para a próxima sem fechar — quem lança um gasto
   // costuma lançar dois.
@@ -167,19 +185,22 @@ function Formulario({
   const grupos = [...new Set(categorias.map((c) => c.grupo))];
 
   return (
-    <form ref={form} action={acao} className="space-y-4 p-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold tracking-tight">
-          {repete
-            ? tipo === "income"
-              ? "O que entra todo mês"
-              : "Conta que chega todo mês"
-            : parcelado
-              ? "Compra parcelada"
-              : tipo === "income"
-                ? "O que entrou"
-                : "O que saiu"}
-        </h2>
+    <form
+      ref={form}
+      action={acao}
+      className="space-y-4 px-5 pt-3"
+      style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
+    >
+      <span aria-hidden className="mx-auto block h-1 w-10 rounded-full bg-[#E2D4C2]" />
+
+      <div className="flex items-center gap-3">
+        <Dindi size={44} humor="feliz" className="flutua-bob shrink-0" />
+        <div className="min-w-0 flex-1">
+          <h2 className="fonte-display text-[15px] font-bold">Lançar na mão</h2>
+          <p className="text-[11.5px] text-suave">
+            Falar com o Claude é mais rápido, mas fica à vontade.
+          </p>
+        </div>
         <button
           type="button"
           onClick={fechar}
@@ -190,6 +211,9 @@ function Formulario({
       </div>
 
       <input type="hidden" name="tipo" value={tipo} />
+      {hibrida && tipo === "expense" && !repete && !parcelado ? (
+        <input type="hidden" name="via" value={via} />
+      ) : null}
 
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium">Quanto?</span>
@@ -257,6 +281,35 @@ function Formulario({
               {o.texto}
             </button>
           ))}
+        </div>
+      ) : null}
+
+      {/*
+        Conta que é débito e crédito: o gasto foi no crédito (fatura) ou no
+        débito (sai do saldo)? Só aparece quando faz sentido.
+      */}
+      {hibrida && tipo === "expense" && !repete && !parcelado ? (
+        <div>
+          <span className="mb-1.5 block text-sm font-medium">Como foi no {conta}?</span>
+          <div className="flex gap-2 text-sm">
+            {[
+              { valor: "debito" as const, texto: "Débito" },
+              { valor: "credito" as const, texto: "Crédito" },
+            ].map((o) => (
+              <button
+                key={o.valor}
+                type="button"
+                onClick={() => setVia(o.valor)}
+                className={`flex-1 rounded-xl border px-3 py-2 transition ${
+                  via === o.valor
+                    ? "border-tinta bg-tinta font-medium text-creme"
+                    : "border-borda text-suave hover:bg-areia"
+                }`}
+              >
+                {o.texto}
+              </button>
+            ))}
+          </div>
         </div>
       ) : null}
 
@@ -340,7 +393,8 @@ function Formulario({
         <div className="mt-3 space-y-3">
           <select
             name="conta"
-            defaultValue={contas[0]?.name}
+            value={conta}
+            onChange={(e) => setConta(e.target.value)}
             aria-label="Conta"
             className="w-full rounded-xl border border-borda bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-tinta"
           >

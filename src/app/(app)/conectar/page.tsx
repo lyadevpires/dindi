@@ -124,19 +124,20 @@ export default async function Conectar() {
       </ol>
 
       <SectionTitle>Coisas que você pode dizer</SectionTitle>
-      <Card>
-        <ul className="space-y-2 text-sm">
-          {EXEMPLOS.map((e) => (
-            <li key={e} className="text-suave">
-              <span className="text-tinta">&ldquo;{e}&rdquo;</span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 text-xs text-suave">
-          Não precisa falar bonito nem lembrar de nomes exatos — o Claude entende e
-          pergunta quando ficar em dúvida.
-        </p>
-      </Card>
+      <div className="flex flex-wrap gap-2">
+        {EXEMPLOS.map((e) => (
+          <span
+            key={e}
+            className="rounded-[20px] bg-[#F3E7D6] px-3.5 py-2 text-[12.5px] italic text-[#5D4B42]"
+          >
+            &ldquo;{e}&rdquo;
+          </span>
+        ))}
+      </div>
+      <p className="mt-4 text-xs text-suave">
+        Não precisa falar bonito nem lembrar de nomes exatos — o Claude entende e
+        pergunta quando ficar em dúvida.
+      </p>
     </>
   );
 }
