@@ -1,5 +1,6 @@
 import { Card, SectionTitle } from "@/components/ui";
 import { Dindi } from "@/components/dindi";
+import { Conectado } from "@/components/conectado";
 import { CopiarEndereco } from "@/components/copiar";
 import { pageCtx } from "@/lib/ctx";
 import { formatDate } from "@/lib/dates";
@@ -64,27 +65,16 @@ export default async function Conectar() {
   return (
     <>
       {conexao ? (
-        <Card className="mb-6 border-verdinho/30 bg-verdinho-claro">
-          <div className="flex items-start gap-4">
-            <Dindi size={64} humor="comemorando" className="shrink-0" />
-            <div className="min-w-0">
-              <h1 className="text-xl font-bold tracking-tight text-verdinho">
-                O {cliente?.client_name || "Claude"} já está conectado
-              </h1>
-              <p className="justo mt-1 text-sm leading-relaxed text-suave">
-                Pronto: agora é só falar. Conte um gasto na conversa e ele aparece aqui —
-                você não precisa fazer mais nada nesta tela.
-              </p>
-              <p className="mt-2 text-xs text-suave">
-                Conectado em {formatDate(conexao.created_at.slice(0, 10))}
-                {conexao.last_used_at
-                  ? ` · usado por último em ${formatDate(conexao.last_used_at.slice(0, 10))}`
-                  : " · ainda não foi usado"}
-                . Para desconectar, vá em Ajustes.
-              </p>
-            </div>
-          </div>
-        </Card>
+        <>
+          <Conectado nome={session.displayName} />
+          <p className="mb-6 text-center text-xs text-suave">
+            Conectado em {formatDate(conexao.created_at.slice(0, 10))}
+            {conexao.last_used_at
+              ? ` · usado por último em ${formatDate(conexao.last_used_at.slice(0, 10))}`
+              : " · ainda não foi usado"}
+            . Para desconectar, vá em Ajustes.
+          </p>
+        </>
       ) : (
         <div className="mb-6 flex items-start gap-4">
           <Dindi size={64} humor="atento" acena />
