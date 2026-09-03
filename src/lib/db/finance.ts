@@ -11,6 +11,7 @@ import {
   allAccounts,
   allCategories,
   allMembers,
+  normalizarNome,
   resolveAccount,
   resolveCategory,
   resolvePerson,
@@ -1565,6 +1566,37 @@ export async function archiveAccount(ctx: Ctx, input: { account: string; archive
 }
 
 /**
+ * Achar a conta certa quando a operação NÃO tem desfazer.
+ *
+ * Duas contas podem se chamar igual — "Nubank" a conta e "Nubank" o cartão,
+ * ou a mesma cadastrada duas vezes. O resolvedor de sempre escolhe uma calado,
+ * o que está ótimo para lançar um gasto e é inaceitável para apagar ou juntar.
+ * Aqui, na dúvida, ninguém escolhe: para e devolve as opções.
+ */
+async function resolverSemDuvida(ctx: Ctx, query: string): Promise<Account> {
+  const conta = (await resolveAccount(ctx, query, { required: true, arquivadas: true }))!;
+
+  // Veio o id: não há dúvida nenhuma a resolver.
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query.trim())) {
+    return conta;
+  }
+
+  const iguais = (await allAccounts(ctx)).filter(
+    (a) => normalizarNome(a.name) === normalizarNome(conta.name)
+  );
+  if (iguais.length > 1) {
+    const descrever = (a: Account) => {
+      const modo = a.tem_debito && a.tem_credito ? "conta + cartão" : a.tem_credito ? "cartão" : "conta";
+      return `${modo}${a.tem_credito && a.closing_day ? `, fecha dia ${a.closing_day}` : ""}${a.archived ? ", arquivada" : ""}`;
+    };
+    throw new DindiError(
+      `Tem ${iguais.length} contas chamadas "${conta.name}" (${iguais.map(descrever).join(" e ")}), e eu não vou escolher uma no escuro numa coisa que não tem desfazer. Veja list_accounts e me diga o id da certa.`
+    );
+  }
+  return conta;
+}
+
+/**
  * Apagar uma conta de vez.
  *
  * Só sai se estiver vazia. Apagar uma conta com lançamentos dentro faria o
@@ -1572,7 +1604,7 @@ export async function archiveAccount(ctx: Ctx, input: { account: string; archive
  * arquivar, que esconde sem destruir.
  */
 export async function deleteAccount(ctx: Ctx, input: { account: string }) {
-  const acc = (await resolveAccount(ctx, input.account, { required: true, arquivadas: true }))!;
+  const acc = await resolverSemDuvida(ctx, input.account);
 
   const contar = async (tabela: string) => {
     const { count } = await ctx.db
@@ -1905,8 +1937,8 @@ export async function createHouseholdInvite(ctx: Ctx, input: { email?: string } 
  * e guarda os dias de fatura de quem os tinha.
  */
 export async function mergeAccounts(ctx: Ctx, input: { from: string; into: string }) {
-  const origem = (await resolveAccount(ctx, input.from, { required: true, arquivadas: true }))!;
-  const alvo = (await resolveAccount(ctx, input.into, { required: true, arquivadas: true }))!;
+  const origem = await resolverSemDuvida(ctx, input.from);
+  const alvo = await resolverSemDuvida(ctx, input.into);
 
   if (origem.id === alvo.id) {
     throw new DindiError(`"${origem.name}" e "${alvo.name}" são a mesma conta — não há o que juntar.`);

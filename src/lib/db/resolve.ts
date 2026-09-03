@@ -13,7 +13,8 @@ import {
  * úteis quando não acham (listando as opções disponíveis).
  */
 
-function normalize(s: string): string {
+/** Normaliza um nome para comparar: sem acento, minúsculo, sem espaço nas pontas. */
+export function normalizarNome(s: string): string {
   return s
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -25,17 +26,17 @@ function pickByName<T extends { id: string; name: string }>(
   items: T[],
   query: string
 ): T | null {
-  const q = normalize(query);
+  const q = normalizarNome(query);
   if (!q) return null;
 
-  const exact = items.find((i) => normalize(i.name) === q);
+  const exact = items.find((i) => normalizarNome(i.name) === q);
   if (exact) return exact;
 
-  const starts = items.filter((i) => normalize(i.name).startsWith(q));
+  const starts = items.filter((i) => normalizarNome(i.name).startsWith(q));
   if (starts.length === 1) return starts[0];
 
   const contains = items.filter(
-    (i) => normalize(i.name).includes(q) || q.includes(normalize(i.name))
+    (i) => normalizarNome(i.name).includes(q) || q.includes(normalizarNome(i.name))
   );
   if (contains.length === 1) return contains[0];
 
@@ -173,7 +174,7 @@ export async function resolvePerson(
     if (byId) return byId.user_id;
   }
 
-  const q = normalize(query);
+  const q = normalizarNome(query);
   if (q === "eu" || q === "mim" || q === "meu" || q === "minha") return ctx.userId;
 
   const found = pickByName(
