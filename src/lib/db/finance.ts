@@ -6,6 +6,7 @@ import {
   today,
 } from "@/lib/dates";
 import { num, round2, splitInstallments } from "@/lib/money";
+import { appUrl } from "@/lib/env";
 import {
   allAccounts,
   allCategories,
@@ -719,11 +720,13 @@ export async function listRecurringRules(ctx: Ctx, onlyActive = true) {
   }));
 }
 
-export async function deactivateRecurringRule(ctx: Ctx, id: string) {
+/** Aceita o id (o site tem ele em mãos) ou o nome falado ("netflix"). */
+export async function deactivateRecurringRule(ctx: Ctx, idOuNome: string) {
+  const regra = await resolveRule(ctx, idOuNome);
   const { data, error } = await ctx.db
     .from("recurring_rules")
     .update({ active: false })
-    .eq("id", id)
+    .eq("id", regra.id)
     .eq("household_id", ctx.householdId)
     .select("id, description")
     .maybeSingle();
@@ -1407,5 +1410,483 @@ export async function getFinancialSummary(
     months: perMonth,
     biggest_category_changes: categoryChanges.slice(0, 10),
     biggest_one_off_expenses: oneOffs,
+  };
+}
+
+// =====================================================================
+// Arrumar o que já está cadastrado
+//
+// Registrar é fácil; o que trava a pessoa é o erro que ficou. Um cartão com
+// o nome errado, uma conta duplicada, o aluguel que subiu, a compra que foi
+// devolvida, a meta que ela já conquistou. Sem um jeito de consertar pela
+// conversa, o único caminho seria mexer no banco — que ela não faz.
+// =====================================================================
+
+/** O que dá para renomear. */
+export type Renomeavel = "conta" | "categoria" | "meta" | "pessoa" | "dindi";
+
+/**
+ * Trocar o nome de alguma coisa.
+ *
+ * Vale para conta/cartão, categoria, meta, o nome de uma pessoa dentro do
+ * dindi e o nome do próprio dindi. É uma função só porque, para quem fala,
+ * é sempre o mesmo pedido: "muda o nome disso pra aquilo".
+ */
+export async function renomear(
+  ctx: Ctx,
+  input: { what: Renomeavel; current_name?: string; new_name: string }
+) {
+  const novo = input.new_name.trim().slice(0, 60);
+  if (!novo) throw new DindiError("Preciso saber o nome novo.");
+
+  switch (input.what) {
+    case "conta": {
+      const acc = (await resolveAccount(ctx, input.current_name, {
+        required: true,
+        arquivadas: true,
+      }))!;
+      const { error } = await ctx.db
+        .from("accounts")
+        .update({ name: novo })
+        .eq("id", acc.id)
+        .eq("household_id", ctx.householdId);
+      if (error) throw new DindiError(error.message);
+      return { renomeado: "conta", de: acc.name, para: novo };
+    }
+
+    case "categoria": {
+      const cat = await resolveCategory(ctx, input.current_name, { arquivadas: true });
+      if (!cat) throw new DindiError("Preciso saber qual categoria renomear.");
+      const { error } = await ctx.db
+        .from("categories")
+        .update({ name: novo })
+        .eq("id", cat.id)
+        .eq("household_id", ctx.householdId);
+      // Duas categorias com o mesmo nome no mesmo dindi não podem existir.
+      if (error && (error.code === "23505" || /duplicate key/i.test(error.message))) {
+        throw new DindiError(
+          `Já existe uma categoria chamada "${novo}". Escolha outro nome, ou mova os lançamentos para ela antes.`
+        );
+      }
+      if (error) throw new DindiError(error.message);
+      return { renomeado: "categoria", de: cat.name, para: novo };
+    }
+
+    case "meta": {
+      if (!input.current_name) throw new DindiError("Preciso saber qual meta renomear.");
+      const meta = await resolveGoal(ctx, input.current_name);
+      const { error } = await ctx.db
+        .from("goals")
+        .update({ name: novo })
+        .eq("id", meta.id)
+        .eq("household_id", ctx.householdId);
+      if (error) throw new DindiError(error.message);
+      return { renomeado: "meta", de: meta.name, para: novo };
+    }
+
+    case "pessoa": {
+      // Sem dizer quem, é quem está falando.
+      const userId = await resolvePerson(ctx, input.current_name);
+      const membros = await allMembers(ctx);
+      const antes = membros.find((m) => m.user_id === userId)?.display_name ?? "?";
+      const { error } = await ctx.db
+        .from("household_members")
+        .update({ display_name: novo })
+        .eq("household_id", ctx.householdId)
+        .eq("user_id", userId);
+      if (error) throw new DindiError(error.message);
+      return { renomeado: "pessoa", de: antes, para: novo };
+    }
+
+    case "dindi": {
+      const { data, error } = await ctx.db
+        .from("households")
+        .update({ name: novo })
+        .eq("id", ctx.householdId)
+        .select("name")
+        .maybeSingle();
+      if (error) throw new DindiError(error.message);
+      return { renomeado: "dindi", para: data?.name ?? novo };
+    }
+  }
+}
+
+/**
+ * De quem é a conta ou o cartão.
+ *
+ * Sem dono, ela é de todo mundo que divide o dindi — e é assim que a tela de
+ * Cartões mostra. Dizer o dono é o que permite separar "o cartão dele" do
+ * "nosso" quando duas pessoas têm cartão do mesmo banco.
+ */
+export async function setAccountOwner(ctx: Ctx, input: { account: string; owner: string }) {
+  const acc = (await resolveAccount(ctx, input.account, { required: true, arquivadas: true }))!;
+
+  const dito = input.owner.trim().toLowerCase();
+  const deTodoMundo = /^(conjunta|conjunto|de todo mundo|todo mundo|nossa|nosso|ningu[eé]m)$/.test(
+    dito
+  );
+  const userId = deTodoMundo ? null : await resolvePerson(ctx, input.owner);
+
+  const { error } = await ctx.db
+    .from("accounts")
+    .update({ owner_user_id: userId })
+    .eq("id", acc.id)
+    .eq("household_id", ctx.householdId);
+  if (error) throw new DindiError(error.message);
+
+  const membros = await allMembers(ctx);
+  return {
+    conta: acc.name,
+    dono: userId
+      ? membros.find((m) => m.user_id === userId)?.display_name ?? "?"
+      : "de todo mundo",
+  };
+}
+
+/**
+ * Tirar uma conta da frente sem apagar o histórico.
+ *
+ * É o certo para a conta que a pessoa fechou no banco: os lançamentos antigos
+ * continuam contando nos meses que já passaram, mas ela some das listas e não
+ * aparece mais como opção na hora de lançar.
+ */
+export async function archiveAccount(ctx: Ctx, input: { account: string; archived?: boolean }) {
+  const arquivar = input.archived ?? true;
+  const acc = (await resolveAccount(ctx, input.account, { required: true, arquivadas: true }))!;
+
+  const { error } = await ctx.db
+    .from("accounts")
+    .update({ archived: arquivar })
+    .eq("id", acc.id)
+    .eq("household_id", ctx.householdId);
+  if (error) throw new DindiError(error.message);
+
+  return { conta: acc.name, arquivada: arquivar };
+}
+
+/**
+ * Apagar uma conta de vez.
+ *
+ * Só sai se estiver vazia. Apagar uma conta com lançamentos dentro faria o
+ * extrato mentir sobre meses que já passaram — nesse caso o caminho é
+ * arquivar, que esconde sem destruir.
+ */
+export async function deleteAccount(ctx: Ctx, input: { account: string }) {
+  const acc = (await resolveAccount(ctx, input.account, { required: true, arquivadas: true }))!;
+
+  const contar = async (tabela: string) => {
+    const { count } = await ctx.db
+      .from(tabela)
+      .select("id", { count: "exact", head: true })
+      .eq("household_id", ctx.householdId)
+      .eq("account_id", acc.id);
+    return count ?? 0;
+  };
+
+  const [lancamentos, fixas, compras] = await Promise.all([
+    contar("transactions"),
+    contar("recurring_rules"),
+    contar("credit_card_purchases"),
+  ]);
+
+  if (lancamentos > 0 || fixas > 0 || compras > 0) {
+    const pendencias = [
+      lancamentos > 0 && `${lancamentos} lançamento${lancamentos === 1 ? "" : "s"}`,
+      fixas > 0 && `${fixas} conta${fixas === 1 ? "" : "s"} que repete${fixas === 1 ? "" : "m"}`,
+      compras > 0 && `${compras} parcelamento${compras === 1 ? "" : "s"}`,
+    ].filter(Boolean);
+    throw new DindiError(
+      `${acc.name} tem ${pendencias.join(" e ")}. Apagar levaria isso junto e bagunçaria os meses que já passaram — melhor arquivar a conta.`
+    );
+  }
+
+  const { error } = await ctx.db
+    .from("accounts")
+    .delete()
+    .eq("id", acc.id)
+    .eq("household_id", ctx.householdId);
+  if (error) throw new DindiError(error.message);
+
+  return { conta: acc.name, apagada: true };
+}
+
+/**
+ * Esconder (ou trazer de volta) uma categoria.
+ *
+ * Categoria não se apaga: os gastos antigos apontam para ela, e sem ela o
+ * histórico perderia o nome do que foi comprado. Arquivar tira da lista de
+ * escolha e deixa o passado intacto.
+ */
+export async function archiveCategory(ctx: Ctx, input: { category: string; archived?: boolean }) {
+  const arquivar = input.archived ?? true;
+  const cat = await resolveCategory(ctx, input.category, { arquivadas: true });
+  if (!cat) throw new DindiError("Preciso saber qual categoria.");
+
+  const { error } = await ctx.db
+    .from("categories")
+    .update({ archived: arquivar })
+    .eq("id", cat.id)
+    .eq("household_id", ctx.householdId);
+  if (error) throw new DindiError(error.message);
+
+  return { categoria: cat.name, arquivada: arquivar };
+}
+
+/** Acha uma recorrência pelo id ou pelo que ela é ("aluguel", "netflix"). */
+async function resolveRule(ctx: Ctx, query: string) {
+  const { data, error } = await ctx.db
+    .from("recurring_rules")
+    .select("*")
+    .eq("household_id", ctx.householdId);
+  if (error) throw new DindiError(error.message);
+
+  const regras = data ?? [];
+  const q = query.trim().toLowerCase();
+  const achou =
+    regras.find((r) => r.id === query) ??
+    regras.find((r) => r.description.toLowerCase() === q) ??
+    regras.find((r) => r.description.toLowerCase().includes(q));
+
+  if (!achou) {
+    throw new DindiError(
+      `Não achei "${query}" nas contas que repetem. Tem: ${
+        regras
+          .filter((r) => r.active)
+          .map((r) => r.description)
+          .join(", ") || "nenhuma"
+      }.`
+    );
+  }
+  return achou;
+}
+
+/**
+ * Mudar uma conta que repete todo mês.
+ *
+ * O aluguel sobe, a assinatura muda de preço, o dia do débito troca. Sem isto
+ * a saída era desligar a antiga e criar outra — e aí o histórico se parte em
+ * duas contas que, para a pessoa, sempre foram a mesma.
+ *
+ * Só muda daqui pra frente: os lançamentos que a rotina já gerou nos meses
+ * passados ficam como estavam, porque foi isso que saiu da conta de verdade.
+ */
+export async function editRecurringRule(
+  ctx: Ctx,
+  input: {
+    rule: string;
+    description?: string;
+    amount?: number;
+    day_of_month?: number;
+    account?: string;
+    category?: string;
+    end_date?: string | null;
+    active?: boolean;
+  }
+) {
+  const regra = await resolveRule(ctx, input.rule);
+
+  const patch: Record<string, unknown> = {};
+  if (input.description !== undefined) patch.description = input.description.trim();
+  if (input.amount !== undefined) {
+    if (input.amount <= 0) throw new DindiError("O valor precisa ser maior que zero.");
+    patch.amount = round2(input.amount);
+  }
+  if (input.day_of_month !== undefined) {
+    if (!Number.isInteger(input.day_of_month) || input.day_of_month < 1 || input.day_of_month > 31) {
+      throw new DindiError("O dia do mês precisa ser de 1 a 31.");
+    }
+    patch.day_of_month = input.day_of_month;
+  }
+  if (input.account !== undefined) {
+    patch.account_id = (await resolveAccount(ctx, input.account, { required: true }))!.id;
+  }
+  if (input.category !== undefined) {
+    const cat = await resolveCategory(ctx, input.category, { createIfMissing: true });
+    patch.category_id = cat?.id ?? null;
+  }
+  if (input.end_date !== undefined) patch.end_date = input.end_date;
+  if (input.active !== undefined) patch.active = input.active;
+
+  if (Object.keys(patch).length === 0) {
+    throw new DindiError("Me diga o que mudar: o valor, o dia, a conta, a categoria ou o nome.");
+  }
+
+  const { data, error } = await ctx.db
+    .from("recurring_rules")
+    .update(patch)
+    .eq("id", regra.id)
+    .eq("household_id", ctx.householdId)
+    .select("*")
+    .single();
+  if (error) throw new DindiError(error.message);
+
+  const [accounts, categories] = await Promise.all([allAccounts(ctx), allCategories(ctx)]);
+  return {
+    description: data.description,
+    amount: num(data.amount),
+    day_of_month: data.day_of_month,
+    account: accounts.find((a) => a.id === data.account_id)?.name ?? "?",
+    category: categories.find((c) => c.id === data.category_id)?.name ?? null,
+    active: data.active,
+    end_date: data.end_date,
+    era: { description: regra.description, amount: num(regra.amount), day_of_month: regra.day_of_month },
+  };
+}
+
+/**
+ * Apagar uma compra parcelada inteira.
+ *
+ * Some com todas as parcelas de uma vez, as que já passaram e as que faltam.
+ * É o que se quer quando a compra foi devolvida, cancelada ou digitada
+ * errada — consertar uma compra em 10x parcela por parcela, mês a mês, é
+ * péssimo. O banco apaga as parcelas em cascata.
+ */
+export async function deleteInstallmentPurchase(ctx: Ctx, input: { purchase: string }) {
+  const { data, error } = await ctx.db
+    .from("credit_card_purchases")
+    .select("*")
+    .eq("household_id", ctx.householdId)
+    .order("purchase_date", { ascending: false });
+  if (error) throw new DindiError(error.message);
+
+  const compras = data ?? [];
+  const q = input.purchase.trim().toLowerCase();
+  const porId = compras.filter((c) => c.id === input.purchase);
+  const exatas = compras.filter((c) => c.description.toLowerCase() === q);
+  const parciais = compras.filter((c) => c.description.toLowerCase().includes(q));
+  const candidatas = porId.length ? porId : exatas.length ? exatas : parciais;
+
+  if (candidatas.length === 0) {
+    throw new DindiError(`Não achei a compra "${input.purchase}" nos parcelamentos.`);
+  }
+  // Apagar é destrutivo: na dúvida entre duas, pergunte em vez de escolher.
+  if (candidatas.length > 1) {
+    throw new DindiError(
+      `Achei mais de uma compra parecida: ${candidatas
+        .map((c) => `${c.description} (${c.purchase_date}, ${c.installments_count}x)`)
+        .join("; ")}. Qual delas?`
+    );
+  }
+
+  const compra = candidatas[0];
+  const { error: delErr } = await ctx.db
+    .from("credit_card_purchases")
+    .delete()
+    .eq("id", compra.id)
+    .eq("household_id", ctx.householdId);
+  if (delErr) throw new DindiError(delErr.message);
+
+  return {
+    compra: compra.description,
+    parcelas: compra.installments_count,
+    total: num(compra.total_amount),
+    apagada: true,
+  };
+}
+
+/**
+ * Mexer numa meta que já existe: nome, valor, prazo — ou fechar ela.
+ *
+ * Fechar (`archived: true`) serve para os dois finais possíveis: a pessoa
+ * conquistou o sonho, ou desistiu dele. Nos dois casos o dinheiro guardado e
+ * o histórico continuam lá; a meta só sai da frente.
+ */
+export async function editGoal(
+  ctx: Ctx,
+  input: {
+    goal: string;
+    new_name?: string;
+    target_amount?: number;
+    target_date?: string | null;
+    archived?: boolean;
+  }
+) {
+  const meta = await resolveGoal(ctx, input.goal);
+
+  const patch: Record<string, unknown> = {};
+  if (input.new_name !== undefined) patch.name = input.new_name.trim().slice(0, 60);
+  if (input.target_amount !== undefined) {
+    if (input.target_amount <= 0) throw new DindiError("O valor da meta precisa ser maior que zero.");
+    patch.target_amount = round2(input.target_amount);
+  }
+  if (input.target_date !== undefined) patch.target_date = input.target_date;
+  if (input.archived !== undefined) patch.archived = input.archived;
+
+  if (Object.keys(patch).length === 0) {
+    throw new DindiError("Me diga o que mudar na meta: o nome, o valor, a data — ou se ela acabou.");
+  }
+
+  const { data, error } = await ctx.db
+    .from("goals")
+    .update(patch)
+    .eq("id", meta.id)
+    .eq("household_id", ctx.householdId)
+    .select("*")
+    .single();
+  if (error) throw new DindiError(error.message);
+
+  const atual = num(data.current_amount);
+  const alvo = num(data.target_amount);
+  return {
+    meta: data.name,
+    target_amount: alvo,
+    current_amount: atual,
+    percent: alvo > 0 ? Math.round((atual / alvo) * 100) : 0,
+    target_date: data.target_date,
+    fechada: data.archived,
+  };
+}
+
+/** Tirar o limite de gasto de uma categoria no mês. */
+export async function removeBudget(ctx: Ctx, input: { category: string; month?: string }) {
+  const cat = await resolveCategory(ctx, input.category);
+  if (!cat) throw new DindiError("Preciso saber de qual categoria tirar o limite.");
+  const referenceMonth = monthStart(input.month ?? today());
+
+  const { data, error } = await ctx.db
+    .from("budgets")
+    .delete()
+    .eq("household_id", ctx.householdId)
+    .eq("category_id", cat.id)
+    .eq("reference_month", referenceMonth)
+    .select("id");
+  if (error) throw new DindiError(error.message);
+  if (!data?.length) {
+    throw new DindiError(`${cat.name} não tinha limite em ${referenceMonth.slice(0, 7)}.`);
+  }
+
+  return { categoria: cat.name, month: referenceMonth, limite_removido: true };
+}
+
+/**
+ * Convidar alguém para o mesmo dindi.
+ *
+ * Devolve o código e o link. Quem recebe cria a conta dela e cai aqui dentro,
+ * vendo e mexendo no mesmo dinheiro — então é para quem divide as contas de
+ * verdade, não para "mostrar" o dindi a alguém.
+ *
+ * (A função `create_invite` do banco descobre a casa pelo login do navegador.
+ * Aqui quem fala é o Claude, com a chave do servidor, então o convite é
+ * escrito direto — com o dindi e a pessoa vindos do token, nunca do texto.)
+ */
+export async function createHouseholdInvite(ctx: Ctx, input: { email?: string } = {}) {
+  const code = crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase();
+
+  const { data, error } = await ctx.db
+    .from("household_invites")
+    .insert({
+      household_id: ctx.householdId,
+      code,
+      email: input.email?.trim() || null,
+      created_by: ctx.userId,
+    })
+    .select("code, expires_at")
+    .single();
+  if (error) throw new DindiError(error.message);
+
+  return {
+    codigo: data.code,
+    link: `${appUrl()}/comecar?convite=${data.code}`,
+    vale_ate: data.expires_at,
   };
 }

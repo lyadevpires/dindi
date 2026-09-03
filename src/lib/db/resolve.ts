@@ -80,9 +80,15 @@ export async function allMembers(ctx: Ctx): Promise<Member[]> {
 export async function resolveAccount(
   ctx: Ctx,
   query: string | undefined | null,
-  opts: { type?: Account["type"]; credito?: boolean; required?: boolean } = {}
+  opts: {
+    type?: Account["type"];
+    credito?: boolean;
+    required?: boolean;
+    /** Enxergar também as arquivadas — para desarquivar ou apagar de vez. */
+    arquivadas?: boolean;
+  } = {}
 ): Promise<Account | null> {
-  const accounts = (await allAccounts(ctx)).filter((a) => !a.archived);
+  const accounts = (await allAccounts(ctx)).filter((a) => opts.arquivadas || !a.archived);
   // `credito` filtra por capacidade (serve conta híbrida também); `type` ainda
   // filtra pelo sabor exato, quando alguém precisa disso.
   let pool = accounts;
@@ -113,11 +119,17 @@ export async function resolveAccount(
 export async function resolveCategory(
   ctx: Ctx,
   query: string | undefined | null,
-  opts: { createIfMissing?: boolean; kind?: "expense" | "income"; bucket?: Bucket } = {}
+  opts: {
+    createIfMissing?: boolean;
+    kind?: "expense" | "income";
+    bucket?: Bucket;
+    /** Enxergar também as arquivadas — para desarquivar. */
+    arquivadas?: boolean;
+  } = {}
 ): Promise<Category | null> {
   if (!query) return null;
 
-  const categories = (await allCategories(ctx)).filter((c) => !c.archived);
+  const categories = (await allCategories(ctx)).filter((c) => opts.arquivadas || !c.archived);
 
   if (UUID_RE.test(query)) {
     const byId = categories.find((c) => c.id === query);

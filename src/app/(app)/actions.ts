@@ -8,6 +8,7 @@ import {
   createAccount,
   createRecurringRule,
   deactivateRecurringRule,
+  deleteAccount,
   deleteTransaction,
 } from "@/lib/db/finance";
 import { DindiError } from "@/lib/db/types";
@@ -214,32 +215,23 @@ export async function apagarLancamento(formData: FormData): Promise<void> {
 /**
  * Apagar uma conta.
  *
- * Só sai se estiver vazia. Apagar uma conta com lançamentos dentro faria o
- * extrato mentir sobre meses que já passaram — nesse caso a pessoa apaga os
- * lançamentos primeiro, e aí ela sabe o que está jogando fora.
+ * A regra mora em `deleteAccount`, junto com a do Claude: só sai se estiver
+ * vazia. Apagar uma conta com movimento dentro faria o extrato mentir sobre
+ * meses que já passaram — nesse caso o caminho é arquivar.
  */
 export async function apagarConta(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const id = String(formData.get("id") ?? "");
   if (!id) return { error: "Não sei qual conta apagar." };
 
-  const { ctx } = await pageCtx();
-
-  const { count } = await ctx.db
-    .from("transactions")
-    .select("id", { count: "exact", head: true })
-    .eq("account_id", id);
-
-  if ((count ?? 0) > 0) {
-    return {
-      error: `Essa conta tem ${count} lançamento${count === 1 ? "" : "s"}. Apague eles no extrato primeiro.`,
-    };
+  try {
+    const { ctx } = await pageCtx();
+    const { conta } = await deleteAccount(ctx, { account: id });
+    revalidatePath("/", "layout");
+    return { ok: `${conta} apagada.` };
+  } catch (e) {
+    if (e instanceof DindiError) return { error: e.message };
+    throw e;
   }
-
-  const { error } = await ctx.db.from("accounts").delete().eq("id", id);
-  if (error) return { error: error.message };
-
-  revalidatePath("/", "layout");
-  return { ok: "Conta apagada." };
 }
 
 /**
