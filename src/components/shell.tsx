@@ -23,7 +23,8 @@ function tituloDaTela(pathname: string): string {
   if (pathname === "/") return "dindi";
   if (pathname.startsWith("/extrato")) return "Extrato";
   if (pathname.startsWith("/cartoes")) return "Cartões";
-  if (pathname.startsWith("/ajustes")) return "Seu perfil";
+  if (pathname.startsWith("/menu")) return "Seu perfil";
+  if (pathname.startsWith("/ajustes")) return "Ajustes";
   if (pathname.startsWith("/metas")) return "Metas";
   if (pathname.startsWith("/reserva")) return "Reserva";
   if (pathname.startsWith("/orcamento")) return "Orçamento";
