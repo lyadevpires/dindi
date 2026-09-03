@@ -72,6 +72,18 @@ h1, h2, h3, .fonte-display {
 }
 
 /*
+ * Quando os valores somem, o porquinho fecha o olho junto — se você não pode
+ * ver, ele também não espia. Espreme o par de olhos numa linha (o mesmo quadro
+ * fechado da piscadinha) e segura ali, por cima de qualquer animação.
+ */
+.valores-ocultos [data-parte="olhos"] {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scaleY(0.08);
+  animation: none !important;
+}
+
+/*
  * Texto corrido com as duas margens retas.
  *
  * Justificar em coluna estreita só funciona junto com separação de sílabas —
