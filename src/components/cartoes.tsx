@@ -20,15 +20,22 @@ export function gradiente(nome: string): string {
   return paletas[s % paletas.length];
 }
 
-/** O cartão colorido, com nome, status, valor da fatura e as datas. */
+/**
+ * O cartão colorido, com nome, status, valor da fatura e as datas.
+ *
+ * `dono` só aparece quando tem mais de uma pessoa no dindi — aí saber de quem
+ * é o cartão importa; sozinha, seria só barulho.
+ */
 export function CartaoColorido({
   nome,
+  dono,
   status,
   total,
   fecha,
   vence,
 }: {
   nome: string;
+  dono?: string;
   status: "open" | "closed" | "paid";
   total: number;
   fecha: string;
@@ -43,9 +50,14 @@ export function CartaoColorido({
         aria-hidden
         className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/[0.09]"
       />
-      <div className="relative flex items-center justify-between">
-        <span className="fonte-display text-[14px] font-bold">{nome}</span>
-        <span className="rounded-full bg-white/25 px-2.5 py-0.5 text-[10.5px] font-semibold">
+      <div className="relative flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <span className="fonte-display block truncate text-[14px] font-bold">{nome}</span>
+          {dono ? (
+            <span className="mt-0.5 block truncate text-[11px] text-white/70">{dono}</span>
+          ) : null}
+        </div>
+        <span className="shrink-0 rounded-full bg-white/25 px-2.5 py-0.5 text-[10.5px] font-semibold">
           {ROTULO[status]}
         </span>
       </div>

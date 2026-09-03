@@ -4,6 +4,7 @@ import { Dindi } from "@/components/dindi";
 import { CartaoColorido } from "@/components/cartoes";
 import { pageCtx } from "@/lib/ctx";
 import { getInvoice } from "@/lib/db/finance";
+import { allAccounts, allMembers } from "@/lib/db/resolve";
 import { formatBRL } from "@/lib/money";
 import { formatDateShort, monthStart, today } from "@/lib/dates";
 
@@ -13,7 +14,7 @@ export default async function FaturaDoCartao(props: {
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { ctx } = await pageCtx();
+  const { session, ctx } = await pageCtx();
   const { id } = await props.params;
   const params = await props.searchParams;
 
@@ -22,6 +23,18 @@ export default async function FaturaDoCartao(props: {
 
   const fatura = await getInvoice(ctx, id, mes).catch(() => null);
   if (!fatura) notFound();
+
+  // De quem é este cartão — só faz diferença quando o dindi tem mais gente.
+  const [contas, membros] = await Promise.all([allAccounts(ctx), allMembers(ctx)]);
+  const conta = contas.find((c) => c.id === id);
+  const dono =
+    membros.length < 2 || !conta
+      ? undefined
+      : !conta.owner_user_id
+        ? "de todo mundo"
+        : conta.owner_user_id === session.userId
+          ? "seu"
+          : `de ${membros.find((m) => m.user_id === conta.owner_user_id)?.display_name.trim().split(" ")[0] ?? "alguém do dindi"}`;
 
   return (
     <>
@@ -34,6 +47,7 @@ export default async function FaturaDoCartao(props: {
 
       <CartaoColorido
         nome={fatura.card}
+        dono={dono}
         status={fatura.status}
         total={fatura.total}
         fecha={fatura.closing_date}
