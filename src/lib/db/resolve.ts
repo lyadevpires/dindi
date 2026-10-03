@@ -84,6 +84,8 @@ export async function resolveAccount(
   opts: {
     type?: Account["type"];
     credito?: boolean;
+    /** Só contas com saldo — de onde o dinheiro pode sair. */
+    debito?: boolean;
     required?: boolean;
     /** Enxergar também as arquivadas — para desarquivar ou apagar de vez. */
     arquivadas?: boolean;
@@ -94,6 +96,7 @@ export async function resolveAccount(
   // filtra pelo sabor exato, quando alguém precisa disso.
   let pool = accounts;
   if (opts.credito) pool = pool.filter((a) => a.tem_credito);
+  if (opts.debito) pool = pool.filter((a) => a.tem_debito);
   if (opts.type) pool = pool.filter((a) => a.type === opts.type);
 
   if (!query) {

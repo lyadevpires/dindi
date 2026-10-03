@@ -2,6 +2,7 @@ import {
   addMonths,
   invoiceDates,
   invoiceMonthFor,
+  monthLabel,
   monthStart,
   today,
 } from "@/lib/dates";
@@ -1012,20 +1013,24 @@ export async function payInvoice(
   const card = await resolveAccount(ctx, input.card, { credito: true, required: true })!;
   const referenceMonth = input.month
     ? monthStart(input.month)
-    : invoiceMonthFor(today(), card!.closing_day!);
+    : await faturaParaPagar(ctx, card!);
+  const mes = monthLabel(referenceMonth);
 
   const invoice = await ensureInvoice(ctx, card!, referenceMonth);
   if (invoice.status === "paid") {
-    throw new DindiError(`A fatura de ${referenceMonth} do ${card!.name} já está paga.`);
+    throw new DindiError(`A fatura de ${mes} do ${card!.name} já está paga.`);
   }
   if (num(invoice.total_amount) === 0) {
-    throw new DindiError(`A fatura de ${referenceMonth} do ${card!.name} está zerada.`);
+    throw new DindiError(`A fatura de ${mes} do ${card!.name} está zerada.`);
   }
 
-  const fromAccount = await resolveAccount(ctx, input.from_account, { required: true });
-  if (fromAccount!.type === "credit_card") {
-    throw new DindiError("Você não pode pagar uma fatura com outro cartão de crédito.");
-  }
+  // Quem manda é o que a conta sabe fazer, não o sabor: uma conta débito e
+  // crédito (Nubank PJ) paga a própria fatura com o saldo dela. No silêncio,
+  // é dela mesma que o dinheiro sai.
+  const fromAccount =
+    !input.from_account && card!.tem_debito
+      ? card!
+      : await resolveAccount(ctx, input.from_account, { debito: true, required: true });
 
   const { data, error } = await ctx.db
     .from("invoices")
@@ -1042,9 +1047,49 @@ export async function payInvoice(
   return {
     card: card!.name,
     reference_month: referenceMonth,
+    fatura: mes,
     amount_paid: num(data.total_amount),
     paid_from: fromAccount!.name,
   };
+}
+
+/**
+ * "Paguei a fatura" fala da que já fechou e está esperando pagamento — não da
+ * que ainda está aberta juntando compras. Pega a mais recente que fechou, não
+ * foi paga e tem valor; se não houver nenhuma, cai na aberta.
+ */
+async function faturaParaPagar(ctx: Ctx, card: Account): Promise<string> {
+  const aberta = invoiceMonthFor(today(), card.closing_day!);
+
+  const { data: txs, error } = await ctx.db
+    .from("transactions")
+    .select("amount, type, invoice_month")
+    .eq("household_id", ctx.householdId)
+    .eq("account_id", card.id)
+    .lt("invoice_month", aberta);
+  if (error) throw new DindiError(error.message);
+
+  const { data: pagas, error: pErr } = await ctx.db
+    .from("invoices")
+    .select("reference_month")
+    .eq("household_id", ctx.householdId)
+    .eq("account_id", card.id)
+    .eq("status", "paid");
+  if (pErr) throw new DindiError(pErr.message);
+  const jaPagas = new Set((pagas ?? []).map((i) => i.reference_month));
+
+  const porMes = new Map<string, number>();
+  for (const t of txs ?? []) {
+    if (!t.invoice_month || jaPagas.has(t.invoice_month)) continue;
+    const v = t.type === "income" ? -num(t.amount) : num(t.amount);
+    porMes.set(t.invoice_month, (porMes.get(t.invoice_month) ?? 0) + v);
+  }
+
+  const fechadas = [...porMes.entries()]
+    .filter(([, total]) => round2(total) > 0)
+    .map(([mes]) => mes)
+    .sort();
+  return fechadas.at(-1) ?? aberta;
 }
 
 // =====================================================================

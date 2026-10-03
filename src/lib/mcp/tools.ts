@@ -561,11 +561,11 @@ export function registerDindiTools(server: McpServer, ctx: Ctx) {
     {
       title: "Marcar fatura como paga",
       description:
-        "Registra o pagamento da fatura, descontando o valor da conta escolhida. Não crie um gasto separado para isso — as compras do cartão já foram contadas.",
+        "Registra o pagamento da fatura, descontando o valor da conta escolhida. Não crie um gasto separado para isso — as compras do cartão já foram contadas. Sem mês, paga a fatura que já fechou e está esperando pagamento. Numa conta débito e crédito (tipo Nubank PJ), sem from_account o dinheiro sai do saldo dela mesma.",
       inputSchema: z.object({
         card: z.string().optional(),
-        month: monthSchema.optional(),
-        from_account: z.string().optional().describe("De qual conta saiu o dinheiro."),
+        month: monthSchema.optional().describe("Mês de referência da fatura. Deixe vazio se a pessoa não disser."),
+        from_account: z.string().optional().describe("De qual conta saiu o dinheiro. Precisa ter saldo (débito)."),
       }),
     },
     safe((args) => fin.payInvoice(ctx, args))
